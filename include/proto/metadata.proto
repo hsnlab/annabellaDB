@@ -30,16 +30,34 @@ message ServerThreadStatistics {
   uint32 access_count = 4;
 }
 
+message DelayReport{
+    string reporter_server_address = 1;
+
+    string measured_server_address = 2;
+
+    uint64 latency=3;
+}
+
 // A message to capture the access frequencies of individual keys for a
 // particular server thread.
 message KeyAccessData {
   // A mapping from an individual key to its access count.
   message KeyCount {
+    message ServerAccess {
+      string requester_address = 1;
+
+      // The number of times this key was accessed during this epoch.
+      uint32 access_count = 2;
+    }
+
     // The key being tracked.
     string key = 1;
 
-    // The number of times this key was accessed during this epoch.
-    uint32 access_count = 2;
+    // The access_type, i.e., GET or PUT
+    // FIXME: Use something else than string for this
+    string access_type = 2;
+
+    repeated ServerAccess accesses = 3;
   }
   // A list of all the key access frequencies tracked during this epoch.
   repeated KeyCount keys = 1;

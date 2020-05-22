@@ -29,11 +29,16 @@ struct TierEnumHash {
 struct KeyReplication {
   hmap<Tier, unsigned, TierEnumHash> global_replication_;
   hmap<Tier, unsigned, TierEnumHash> local_replication_;
+  Address master_address_="not set";
+  set<Address> slave_addresses_;
+
 };
 
 struct KeyProperty {
   unsigned size_;
   LatticeType type_;
+  bool master_;
+  string master_address_;
 };
 
 inline bool operator==(const KeyReplication &lhs, const KeyReplication &rhs) {

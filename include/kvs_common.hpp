@@ -54,12 +54,14 @@ inline void prepare_get_tuple(KeyRequest &req, Key key,
   tp->set_lattice_type(std::move(lattice_type));
 }
 
+// FIXME:
 inline void prepare_put_tuple(KeyRequest &req, Key key,
-                              LatticeType lattice_type, string payload) {
+                              LatticeType lattice_type, string payload, string master="not set") {
   KeyTuple *tp = req.add_tuples();
   tp->set_key(std::move(key));
   tp->set_lattice_type(std::move(lattice_type));
   tp->set_payload(std::move(payload));
+  tp->set_master(std::move(master));
 }
 
 #endif // KVS_INCLUDE_KVS_COMMON_HPP_

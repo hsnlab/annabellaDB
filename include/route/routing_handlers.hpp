@@ -40,6 +40,6 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                      LocalRingMap &local_hash_rings,
                      map<Key, KeyReplication> &key_replication_map,
                      map<Key, vector<pair<Address, string>>> &pending_requests,
-                     unsigned &seed);
+                     unsigned &seed, Address ip, Address monitoring_ip);
 
 #endif // INCLUDE_ROUTE_ROUTING_HANDLERS_HPP_

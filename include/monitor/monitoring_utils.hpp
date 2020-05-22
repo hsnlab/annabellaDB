@@ -20,7 +20,10 @@
 #include "requests.hpp"
 
 // define monitoring threshold (in second)
-const unsigned kMonitoringThreshold = 30;
+const unsigned kMonitoringThreshold = 15;
+
+// define key distribution update message threshold (in second)
+const unsigned kKeysUpdateThreshold = 2;
 
 // define the grace period for triggering elasticity action (in second)
 const unsigned kGracePeriod = 120;
@@ -46,73 +49,77 @@ const unsigned kMinEbsTierSize = 0;
 const unsigned kValueSize = 256;
 
 struct SummaryStats {
-  void clear() {
-    key_access_mean = 0;
-    key_access_std = 0;
-    total_memory_access = 0;
-    total_ebs_access = 0;
-    total_memory_consumption = 0;
-    total_ebs_consumption = 0;
-    max_memory_consumption_percentage = 0;
-    max_ebs_consumption_percentage = 0;
-    avg_memory_consumption_percentage = 0;
-    avg_ebs_consumption_percentage = 0;
-    required_memory_node = 0;
-    required_ebs_node = 0;
-    max_memory_occupancy = 0;
-    min_memory_occupancy = 1;
-    avg_memory_occupancy = 0;
-    max_ebs_occupancy = 0;
-    min_ebs_occupancy = 1;
-    avg_ebs_occupancy = 0;
-    min_occupancy_memory_public_ip = Address();
-    min_occupancy_memory_private_ip = Address();
-    avg_latency = 0;
-    total_throughput = 0;
-  }
+    void clear() {
+        key_access_mean = 0;
+        key_access_std = 0;
+        total_memory_access = 0;
+        total_ebs_access = 0;
+        total_memory_consumption = 0;
+        total_ebs_consumption = 0;
+        max_memory_consumption_percentage = 0;
+        max_ebs_consumption_percentage = 0;
+        avg_memory_consumption_percentage = 0;
+        avg_ebs_consumption_percentage = 0;
+        required_memory_node = 0;
+        required_ebs_node = 0;
+        max_memory_occupancy = 0;
+        min_memory_occupancy = 1;
+        avg_memory_occupancy = 0;
+        max_ebs_occupancy = 0;
+        min_ebs_occupancy = 1;
+        avg_ebs_occupancy = 0;
+        min_occupancy_memory_public_ip = Address();
+        min_occupancy_memory_private_ip = Address();
+        avg_latency = 0;
+        total_throughput = 0;
+    }
 
-  SummaryStats() { clear(); }
-  double key_access_mean;
-  double key_access_std;
-  unsigned total_memory_access;
-  unsigned total_ebs_access;
-  unsigned long long total_memory_consumption;
-  unsigned long long total_ebs_consumption;
-  double max_memory_consumption_percentage;
-  double max_ebs_consumption_percentage;
-  double avg_memory_consumption_percentage;
-  double avg_ebs_consumption_percentage;
-  unsigned required_memory_node;
-  unsigned required_ebs_node;
-  double max_memory_occupancy;
-  double min_memory_occupancy;
-  double avg_memory_occupancy;
-  double max_ebs_occupancy;
-  double min_ebs_occupancy;
-  double avg_ebs_occupancy;
-  Address min_occupancy_memory_public_ip;
-  Address min_occupancy_memory_private_ip;
-  double avg_latency;
-  double total_throughput;
+    SummaryStats() { clear(); }
+
+    double key_access_mean;
+    double key_access_std;
+    unsigned total_memory_access;
+    unsigned total_ebs_access;
+    unsigned long long total_memory_consumption;
+    unsigned long long total_ebs_consumption;
+    double max_memory_consumption_percentage;
+    double max_ebs_consumption_percentage;
+    double avg_memory_consumption_percentage;
+    double avg_ebs_consumption_percentage;
+    unsigned required_memory_node;
+    unsigned required_ebs_node;
+    double max_memory_occupancy;
+    double min_memory_occupancy;
+    double avg_memory_occupancy;
+    double max_ebs_occupancy;
+    double min_ebs_occupancy;
+    double avg_ebs_occupancy;
+    Address min_occupancy_memory_public_ip;
+    Address min_occupancy_memory_private_ip;
+    double avg_latency;
+    double total_throughput;
 };
 
 void collect_internal_stats(
-    GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
-    SocketCache &pushers, MonitoringThread &mt, zmq::socket_t &response_puller,
-    logger log, unsigned &rid,
-    map<Key, map<Address, unsigned>> &key_access_frequency,
-    map<Key, unsigned> &key_size, StorageStats &memory_storage,
-    StorageStats &ebs_storage, OccupancyStats &memory_occupancy,
-    OccupancyStats &ebs_occupancy, AccessStats &memory_access,
-    AccessStats &ebs_access);
+        GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
+        SocketCache &pushers, MonitoringThread &mt, zmq::socket_t &response_puller,
+        logger log, unsigned &rid,
+        map<Key, map<Address, map<Address, unsigned>>> &key_get_access_frequency,
+        map<Key, map<Address, map<Address, unsigned>>> &key_put_access_frequency,
+        map<Key, unsigned> &key_size, StorageStats &memory_storage,
+        StorageStats &ebs_storage, OccupancyStats &memory_occupancy,
+        OccupancyStats &ebs_occupancy, AccessStats &memory_access,
+        AccessStats &ebs_access, map<Key, map<Address, map<Address, unsigned>>> &key_prev_get_access,
+        map<Key, map<Address, map<Address, unsigned>>> &key_prev_put_access);
 
 void compute_summary_stats(
-    map<Key, map<Address, unsigned>> &key_access_frequency,
-    StorageStats &memory_storage, StorageStats &ebs_storage,
-    OccupancyStats &memory_occupancy, OccupancyStats &ebs_occupancy,
-    AccessStats &memory_access, AccessStats &ebs_access,
-    map<Key, unsigned> &key_access_summary, SummaryStats &ss, logger log,
-    unsigned &server_monitoring_epoch);
+        map<Key, map<Address, map<Address, unsigned>>> &key_get_access_frequency,
+        map<Key, map<Address, map<Address, unsigned>>> &key_put_access_frequency,
+        StorageStats &memory_storage, StorageStats &ebs_storage,
+        OccupancyStats &memory_occupancy, OccupancyStats &ebs_occupancy,
+        AccessStats &memory_access, AccessStats &ebs_access,
+        map<Key, unsigned> &key_access_summary, SummaryStats &ss, logger log,
+        unsigned &server_monitoring_epoch);
 
 void collect_external_stats(map<string, double> &user_latency,
                             map<string, double> &user_throughput,
@@ -122,9 +129,9 @@ KeyReplication create_new_replication_vector(unsigned gm, unsigned ge,
                                              unsigned lm, unsigned le);
 
 void prepare_replication_factor_update(
-    const Key &key,
-    map<Address, ReplicationFactorUpdate> &replication_factor_map,
-    Address server_address, map<Key, KeyReplication> &key_replication_map);
+        const Key &key,
+        map<Address, ReplicationFactorUpdate> &replication_factor_map,
+        Address server_address, map<Key, KeyReplication> &key_replication_map);
 
 void change_replication_factor(map<Key, KeyReplication> &requests,
                                GlobalRingMap &global_hash_rings,

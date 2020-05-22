@@ -45,13 +45,15 @@ void self_depart_handler(unsigned thread_id, unsigned &seed, Address public_ip,
                          SocketCache &pushers, SerializerMap &serializers);
 
 void user_request_handler(
-    unsigned &access_count, unsigned &seed, string &serialized, logger log,
-    GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
-    map<Key, vector<PendingRequest>> &pending_requests,
-    map<Key, std::multiset<TimePoint>> &key_access_tracker,
-    map<Key, KeyProperty> &stored_key_map,
-    map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
-    ServerThread &wt, SerializerMap &serializers, SocketCache &pushers);
+        unsigned &access_count, unsigned &seed, string &serialized, logger log,
+        GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
+        map<Key, vector<PendingRequest>> &pending_requests,
+        map<Key, std::multiset<TimePoint>> &key_access_tracker,
+        map<Key, map<Address, std::multiset<TimePoint>>> &key_get_access_tracker,
+        map<Key, map<Address, std::multiset<TimePoint>>> &key_put_access_tracker,
+        map<Key, KeyProperty> &stored_key_map,
+        map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
+        ServerThread &wt, SerializerMap &serializers, SocketCache &pushers, vector<Address> monitoring_ips);
 
 void gossip_handler(unsigned &seed, string &serialized,
                     GlobalRingMap &global_hash_rings,
@@ -63,21 +65,23 @@ void gossip_handler(unsigned &seed, string &serialized,
                     SocketCache &pushers, logger log);
 
 void replication_response_handler(
-    unsigned &seed, unsigned &access_count, logger log, string &serialized,
-    GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
-    map<Key, vector<PendingRequest>> &pending_requests,
-    map<Key, vector<PendingGossip>> &pending_gossip,
-    map<Key, std::multiset<TimePoint>> &key_access_tracker,
-    map<Key, KeyProperty> &stored_key_map,
-    map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
-    ServerThread &wt, SerializerMap &serializers, SocketCache &pushers);
+        unsigned &seed, unsigned &access_count, logger log, string &serialized,
+        GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
+        map<Key, vector<PendingRequest>> &pending_requests,
+        map<Key, vector<PendingGossip>> &pending_gossip,
+        map<Key, std::multiset<TimePoint>> &key_access_tracker,
+        map<Key, map<Address, std::multiset<TimePoint>>> &key_get_access_tracker,
+        map<Key, map<Address, std::multiset<TimePoint>>> &key_put_access_tracker,
+        map<Key, KeyProperty> &stored_key_map,
+        map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
+        ServerThread &wt, SerializerMap &serializers, SocketCache &pushers, const Address &public_ip);
 
 void replication_change_handler(
-    Address public_ip, Address private_ip, unsigned thread_id, unsigned &seed,
-    logger log, string &serialized, GlobalRingMap &global_hash_rings,
-    LocalRingMap &local_hash_rings, map<Key, KeyProperty> &stored_key_map,
-    map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
-    ServerThread &wt, SerializerMap &serializers, SocketCache &pushers);
+        Address public_ip, Address private_ip, unsigned thread_id, unsigned &seed,
+        logger log, string &serialized, GlobalRingMap &global_hash_rings,
+        LocalRingMap &local_hash_rings, map<Key, KeyProperty> &stored_key_map,
+        map<Key, KeyReplication> &key_replication_map, set<Key> &local_changeset,
+        ServerThread &wt, SerializerMap &serializers, SocketCache &pushers);
 
 // Postcondition:
 // cache_ip_to_keys, key_to_cache_ips are both updated
@@ -96,7 +100,9 @@ std::pair<string, AnnaError> process_get(const Key &key,
 
 void process_put(const Key &key, LatticeType lattice_type,
                  const string &payload, Serializer *serializer,
-                 map<Key, KeyProperty> &stored_key_map);
+                 map<Key, KeyProperty> &stored_key_map, bool is_master = false);
+
+void process_del(const Key &key, Serializer *serializer, map<Key, KeyProperty> &stored_key_map);
 
 bool is_primary_replica(const Key &key,
                         map<Key, KeyReplication> &key_replication_map,

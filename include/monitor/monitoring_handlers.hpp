@@ -18,6 +18,14 @@
 #include "hash_ring.hpp"
 #include "metadata.pb.h"
 
+class NodeAsPlacementDest {
+public:
+    ServerThread st;
+    double load;
+    int capacity;
+    set<Key> replicas;
+};
+
 void membership_handler(logger log, string &serialized,
                         GlobalRingMap &global_hash_rings,
                         unsigned &new_memory_count, unsigned &new_ebs_count,
@@ -25,7 +33,8 @@ void membership_handler(logger log, string &serialized,
                         StorageStats &memory_storage, StorageStats &ebs_storage,
                         OccupancyStats &memory_occupancy,
                         OccupancyStats &ebs_occupancy,
-                        map<Key, map<Address, unsigned>> &key_access_frequency);
+                        map<Key, map<Address, map<Address, unsigned>>> &key_get_access_frequency,
+                        map<Key, map<Address, map<Address, unsigned>>> &key_put_access_frequency);
 
 void depart_done_handler(logger log, string &serialized,
                          map<Address, unsigned> &departing_node_map,
@@ -34,8 +43,16 @@ void depart_done_handler(logger log, string &serialized,
                          TimePoint &grace_start);
 
 void feedback_handler(
-    string &serialized, map<string, double> &user_latency,
-    map<string, double> &user_throughput,
-    map<Key, std::pair<double, unsigned>> &latency_miss_ratio_map);
+        string &serialized, map<string, double> &user_latency,
+        map<string, double> &user_throughput,
+        map<Key, std::pair<double, unsigned>> &latency_miss_ratio_map);
+
+void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &global_hash_rings, SocketCache &pushers,
+                                map<Key, KeyReplication> &key_replication_map, set<Key> &local_change_set,
+                                map<Key, map<Key, double>> &delay_matrix,
+                                map<std::string, NodeAsPlacementDest> &host_statuses,
+                                map<Key, set<std::string>> &slaves_of_master,
+                                map<Key, map<Address, double>> &writer_rates,
+                                map<Key, map<Address, double>> &reader_rates, zmq::socket_t &response_puller, bool replacement=false);
 
 #endif // KVS_INCLUDE_MONITOR_MONITORING_HANDLERS_HPP_

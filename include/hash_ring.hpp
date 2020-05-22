@@ -21,56 +21,56 @@
 #include "kvs_common.hpp"
 #include "metadata.hpp"
 
-template <typename H>
+template<typename H>
 class HashRing : public ConsistentHashMap<ServerThread, H> {
 public:
-  HashRing() {}
+    HashRing() {}
 
-  ~HashRing() {}
+    ~HashRing() {}
 
 public:
-  ServerThreadSet get_unique_servers() const { return unique_servers; }
+    ServerThreadSet get_unique_servers() const { return unique_servers; }
 
-  bool insert(Address public_ip, Address private_ip, int join_count,
-              unsigned tid) {
-    ServerThread new_thread = ServerThread(public_ip, private_ip, tid, 0);
+    bool insert(Address public_ip, Address private_ip, int join_count,
+                unsigned tid) {
+        ServerThread new_thread = ServerThread(public_ip, private_ip, tid, 0);
 
-    if (unique_servers.find(new_thread) != unique_servers.end()) {
-      // if we already have the server, only return true if it's rejoining
-      if (server_join_count[private_ip] < join_count) {
-        server_join_count[private_ip] = join_count;
-        return true;
-      }
+        if (unique_servers.find(new_thread) != unique_servers.end()) {
+            // if we already have the server, only return true if it's rejoining
+            if (server_join_count[private_ip] < join_count) {
+                server_join_count[private_ip] = join_count;
+                return true;
+            }
 
-      return false;
-    } else { // otherwise, insert it into the hash ring for the first time
-      unique_servers.insert(new_thread);
-      server_join_count[private_ip] = join_count;
+            return false;
+        } else { // otherwise, insert it into the hash ring for the first time
+            unique_servers.insert(new_thread);
+            server_join_count[private_ip] = join_count;
 
-      for (unsigned virtual_num = 0; virtual_num < kVirtualThreadNum;
-           virtual_num++) {
-        ServerThread st = ServerThread(public_ip, private_ip, tid, virtual_num);
-        ConsistentHashMap<ServerThread, H>::insert(st);
-      }
+            for (unsigned virtual_num = 0; virtual_num < kVirtualThreadNum;
+                 virtual_num++) {
+                ServerThread st = ServerThread(public_ip, private_ip, tid, virtual_num);
+                ConsistentHashMap<ServerThread, H>::insert(st);
+            }
 
-      return true;
-    }
-  }
-
-  void remove(Address public_ip, Address private_ip, unsigned tid) {
-    for (unsigned virtual_num = 0; virtual_num < kVirtualThreadNum;
-         virtual_num++) {
-      ServerThread st = ServerThread(public_ip, private_ip, tid, virtual_num);
-      ConsistentHashMap<ServerThread, H>::erase(st);
+            return true;
+        }
     }
 
-    unique_servers.erase(ServerThread(public_ip, private_ip, tid, 0));
-    server_join_count.erase(private_ip);
-  }
+    void remove(Address public_ip, Address private_ip, unsigned tid) {
+        for (unsigned virtual_num = 0; virtual_num < kVirtualThreadNum;
+             virtual_num++) {
+            ServerThread st = ServerThread(public_ip, private_ip, tid, virtual_num);
+            ConsistentHashMap<ServerThread, H>::erase(st);
+        }
+
+        unique_servers.erase(ServerThread(public_ip, private_ip, tid, 0));
+        server_join_count.erase(private_ip);
+    }
 
 private:
-  ServerThreadSet unique_servers;
-  map<string, int> server_join_count;
+    ServerThreadSet unique_servers;
+    map<string, int> server_join_count;
 };
 
 // These typedefs are for brevity, and they were introduced after we removed
@@ -83,31 +83,31 @@ typedef hmap<Tier, LocalHashRing, TierEnumHash> LocalRingMap;
 
 class HashRingUtilInterface {
 public:
-  virtual ServerThreadList get_responsible_threads(
-      Address respond_address, const Key &key, bool metadata,
-      GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
-      map<Key, KeyReplication> &key_replication_map, SocketCache &pushers,
-      const vector<Tier> &tiers, bool &succeed, unsigned &seed) = 0;
+    virtual ServerThreadList get_responsible_threads(
+            Address respond_address, const Key &key, bool metadata,
+            GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
+            map<Key, KeyReplication> &key_replication_map, SocketCache &pushers,
+            const vector<Tier> &tiers, bool &succeed, unsigned &seed) = 0;
 
-  ServerThreadList
-  get_responsible_threads_metadata(const Key &key,
-                                   GlobalHashRing &global_memory_hash_ring,
-                                   LocalHashRing &local_memory_hash_ring);
+    ServerThreadList
+    get_responsible_threads_metadata(const Key &key,
+                                     GlobalHashRing &global_memory_hash_ring,
+                                     LocalHashRing &local_memory_hash_ring);
 
-  void issue_replication_factor_request(const Address &respond_address,
-                                        const Key &key,
-                                        GlobalHashRing &global_memory_hash_ring,
-                                        LocalHashRing &local_memory_hash_ring,
-                                        SocketCache &pushers, unsigned &seed);
+    void issue_replication_factor_request(const Address &respond_address,
+                                          const Key &key,
+                                          GlobalHashRing &global_memory_hash_ring,
+                                          LocalHashRing &local_memory_hash_ring,
+                                          SocketCache &pushers, unsigned &seed);
 };
 
 class HashRingUtil : public HashRingUtilInterface {
 public:
-  virtual ServerThreadList get_responsible_threads(
-      Address respond_address, const Key &key, bool metadata,
-      GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
-      map<Key, KeyReplication> &key_replication_map, SocketCache &pushers,
-      const vector<Tier> &tiers, bool &succeed, unsigned &seed);
+    virtual ServerThreadList get_responsible_threads(
+            Address respond_address, const Key &key, bool metadata,
+            GlobalRingMap &global_hash_rings, LocalRingMap &local_hash_rings,
+            map<Key, KeyReplication> &key_replication_map, SocketCache &pushers,
+            const vector<Tier> &tiers, bool &succeed, unsigned &seed);
 };
 
 ServerThreadList responsible_global(const Key &key, unsigned global_rep,
