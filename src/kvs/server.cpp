@@ -12,8 +12,12 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include <iostream>
 #include "kvs/kvs_handlers.hpp"
 #include "yaml-cpp/yaml.h"
+
+// the current request id
+unsigned rid_ = 0;
 
 // define server report threshold (in second)
 const unsigned kServerReportThreshold = 15;
@@ -47,10 +51,10 @@ HashRingUtilInterface *kHashRingUtil = &hash_ring_util;
 void run(unsigned thread_id, Address public_ip, Address private_ip,
          Address seed_ip, vector<Address> routing_ips,
          vector<Address> monitoring_ips, Address management_ip) {
-  string log_file = "log_" + std::to_string(thread_id) + ".txt";
-  string log_name = "server_log_" + std::to_string(thread_id);
-  auto log = spdlog::basic_logger_mt(log_name, log_file, true);
-  log->flush_on(spdlog::level::info);
+    string log_file = "log_server_" + std::to_string(thread_id) + ".txt";
+    string log_name = "server_log_" + std::to_string(thread_id);
+    auto log = spdlog::basic_logger_mt(log_name, log_file, true);
+    log->flush_on(spdlog::level::info);
 
   // each thread has a handle to itself
   ServerThread wt = ServerThread(public_ip, private_ip, thread_id);
@@ -238,13 +242,17 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
   // the set of changes made on this thread since the last round of gossip
   set<Key> local_changeset;
 
-  // keep track of the key stat
-  // the first entry is the size of the key,
-  // the second entry is its lattice type.
-  // keep track of key access timestamp
-  map<Key, std::multiset<TimePoint>> key_access_tracker;
-  // keep track of total access
-  unsigned access_count;
+    // keep track of the key stat
+    // the first entry is the size of the key,
+    // the second entry is its lattice type.
+    // keep track of key access timestamp
+    map<Key, std::multiset<TimePoint>> key_access_tracker;
+    //map<Key, std::multiset<TimePoint>> key_get_access_tracker;
+    map<Key, map<Address, std::multiset<TimePoint>>> key_get_access_tracker;
+    //map<Key, std::multiset<TimePoint>> key_put_access_tracker;
+    map<Key, map<Address, std::multiset<TimePoint>>> key_put_access_tracker;
+    // keep track of total access
+    unsigned access_count;
 
   // listens for a new node joining
   zmq::socket_t join_puller(context, ZMQ_PULL);
@@ -278,16 +286,38 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
   zmq::socket_t cache_ip_response_puller(context, ZMQ_PULL);
   cache_ip_response_puller.bind(wt.cache_ip_response_bind_address());
 
-  //  Initialize poll set
-  vector<zmq::pollitem_t> pollitems = {
-      {static_cast<void *>(join_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(depart_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(self_depart_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(request_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(gossip_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(replication_response_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(replication_change_puller), 0, ZMQ_POLLIN, 0},
-      {static_cast<void *>(cache_ip_response_puller), 0, ZMQ_POLLIN, 0}};
+    // responsible for listening for delay request messages.
+    zmq::socket_t delay_request_puller(context, ZMQ_PULL);
+    delay_request_puller.bind(wt.delay_request_bind_address());
+
+    // responsible for listening for delay response messages.
+    zmq::socket_t delay_response_puller(context, ZMQ_PULL);
+    delay_response_puller.bind(wt.delay_response_bind_address());
+
+    zmq::socket_t store_request_puller(context, ZMQ_PULL);
+    store_request_puller.bind(wt.store_request_bind_address());
+
+    zmq::socket_t update_puller(context, ZMQ_PULL);
+    update_puller.bind(wt.update_bind_address());
+
+    zmq::socket_t slave_update_puller(context, ZMQ_PULL);
+    slave_update_puller.bind(wt.slave_update_bind_address());
+
+    //  Initialize poll set
+    vector<zmq::pollitem_t> pollitems = {
+            {static_cast<void *>(join_puller),                 0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(depart_puller),               0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(self_depart_puller),          0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(request_puller),              0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(gossip_puller),               0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(replication_response_puller), 0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(replication_change_puller),   0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(cache_ip_response_puller),    0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(delay_request_puller),        0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(delay_response_puller),       0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(store_request_puller),        0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(update_puller),               0, ZMQ_POLLIN, 0},
+            {static_cast<void *>(slave_update_puller),         0, ZMQ_POLLIN, 0}};
 
   auto gossip_start = std::chrono::system_clock::now();
   auto gossip_end = std::chrono::system_clock::now();
@@ -346,12 +376,13 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
     if (pollitems[3].revents & ZMQ_POLLIN) {
       auto work_start = std::chrono::system_clock::now();
 
-      string serialized = kZmqUtil->recv_string(&request_puller);
-      user_request_handler(access_count, seed, serialized, log,
-                           global_hash_rings, local_hash_rings,
-                           pending_requests, key_access_tracker, stored_key_map,
-                           key_replication_map, local_changeset, wt,
-                           serializers, pushers);
+            string serialized = kZmqUtil->recv_string(&request_puller);
+            user_request_handler(access_count, seed, serialized, log,
+                                 global_hash_rings, local_hash_rings,
+                                 pending_requests, key_access_tracker, key_get_access_tracker, key_put_access_tracker,
+                                 stored_key_map,
+                                 key_replication_map, local_changeset, wt,
+                                 serializers, pushers, monitoring_ips);
 
       auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
                               std::chrono::system_clock::now() - work_start)
@@ -425,15 +456,278 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
       working_time_map[7] += time_elapsed;
     }
 
-    // gossip updates to other threads
-    gossip_end = std::chrono::system_clock::now();
-    if (std::chrono::duration_cast<std::chrono::microseconds>(gossip_end -
-                                                              gossip_start)
-            .count() >= PERIOD) {
-      auto work_start = std::chrono::system_clock::now();
-      // only gossip if we have changes
-      if (local_changeset.size() > 0) {
-        AddressKeysetMap addr_keyset_map;
+        // Receive delay request message.
+        if (pollitems[8].revents & ZMQ_POLLIN) {
+
+            auto start = std::chrono::system_clock::now();
+
+            string serialized = kZmqUtil->recv_string(&delay_request_puller);
+            DelayRequest request;
+            request.ParseFromString(serialized);
+
+            //log->info("SERVER: Message arrived here: {}", wt.delay_request_bind_address());
+            //log->info("SERVER: Receive delay request message from {}", request.response_address());
+            //std::cout << "ROUTE: Creating the DelayResponse.\n";
+            DelayResponse response;
+            string response_id = request.request_id();
+            response.set_timestamp(request.timestamp());
+            response.set_sender_address(public_ip);
+
+            //std::cout << "ROUTE: Sending DelayResponse back to "+request.response_address()+".\n";
+            //log->info("SERVER: RSending DelayResponse back to {}", request.response_address());
+            string serialized_response;
+            response.SerializeToString(&serialized_response);
+            kZmqUtil->send_string(serialized_response, &pushers[request.response_address()]);
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("RECEIVE DELAY REQUEST: {}",time_elapsed);
+
+        }
+
+        // Receive delay response message.
+        if (pollitems[9].revents & ZMQ_POLLIN) {
+
+            auto start = std::chrono::system_clock::now();
+
+
+            //std::cout << "ROUTE: Receive delay response message.\n";
+            //log->info("SERVER: Receive delay response message.\n");
+            string serialized = kZmqUtil->recv_string(&delay_response_puller);
+            DelayResponse response;
+            response.ParseFromString(serialized);
+
+            auto sending_time = response.timestamp();
+            auto receiving_time = generate_timestamp(wt.tid());
+
+            //log->info("DEBUG: Delay between '{}' and '{}' is {} ", public_ip, response.sender_address(),
+            //          receiving_time - sending_time);
+
+            // creating report message
+            DelayReport delay_report;
+
+            // set reporter address
+            delay_report.set_reporter_server_address(public_ip);
+
+            // set measured address
+            delay_report.set_measured_server_address(response.sender_address());
+
+            delay_report.set_latency(receiving_time - sending_time);
+
+            // set monitoring address
+            Address monitor_address = MonitoringThread(monitoring_ips[0]).report_delay_address();
+
+            //std::cout << "SERVER: Report Delay to " + monitor_address + "\n";
+            // sending out the request
+            string serialized_req;
+            delay_report.SerializeToString(&serialized_req);
+            kZmqUtil->send_string(serialized_req, &pushers[monitor_address]);
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("RECEIVE DELAY RESPONSE MESSAGE: {}",time_elapsed);
+
+        }
+
+        // Store Request.
+        if (pollitems[10].revents & ZMQ_POLLIN) {
+
+            auto start = std::chrono::system_clock::now();
+
+            string serialized = kZmqUtil->recv_string(&store_request_puller);
+            KeyRequest request;
+            request.ParseFromString(serialized);
+            RequestType request_type = request.type();
+
+            KeyResponse response;
+            string response_id = request.request_id();
+            response.set_response_id(request.request_id());
+            response.set_type(request.type());
+
+            // iterating through the keys
+            for (const auto &tuple : request.tuples()) {
+                Key key = tuple.key();
+                string payload = tuple.payload();
+
+                if (request_type == RequestType::PUT) {
+
+                    //log->info("SERVER: PUT <KeyRequest> arrived from the BOOTSTRAP server to store KEY {}",key);
+
+                    // init key replication
+                    //log->info("init key replication...");
+                    init_replication(key_replication_map, key);
+                    //log->info("OK");
+
+                    // store the key and its value
+                    //log->info("store the key and its value...");
+                    process_put(key, tuple.lattice_type(), payload,
+                                serializers[tuple.lattice_type()], stored_key_map, true);
+                    local_changeset.insert(key);
+                    key_replication_map[key].master_address_ = tuple.master();
+                    //log->info("OK");
+
+                    KeyTuple *tp = response.add_tuples();
+                    tp->set_key(key);
+                    tp->set_lattice_type(tuple.lattice_type());
+
+                    // Set the access statistics
+                    //FIXME: Use just address instead of request.response_address()
+                    //key_put_access_tracker[key][request.response_address()].insert(std::chrono::system_clock::now());
+                    access_count += 1;
+                }
+
+                else if(request_type == RequestType::DEL){
+                    //log->info("DEBUG: Request is to DEL key '{}'----",key);
+                    KeyTuple *tp = response.add_tuples();
+                    tp->set_key(key);
+
+                    if (stored_key_map.find(key) != stored_key_map.end()){
+                        if(key_replication_map[key].master_address_ == wt.public_ip()){
+                            key_replication_map[key].master_address_ = "";
+                        }
+                        key_replication_map[key].slave_addresses_.clear();
+                        process_del(key, serializers[tuple.lattice_type()], stored_key_map);
+
+                        /*
+                        log->info("###########################################################################");
+                        log->info("DEBUG: (STAT) Content of the key_replication_map:");
+                        for (const auto &key_rep : key_replication_map) {
+                            if (key_rep.first.find("METADATA") == std::string::npos) {
+                                log->info("DEBUG: (STAT) \t - Key: '{}'\t Master address: '{}'\tSlave addresses:", key_rep.first,
+                                          key_rep.second.master_address_);
+                                for (const auto &slave : key_rep.second.slave_addresses_) {
+                                    log->info("DEBUG: (STAT) \t\t\t\t\t\t *  {}", slave);
+                                }
+                            }
+                        }
+                        log->info("###########################################################################");
+                         */
+                    }
+                }
+
+                else {
+                    log->error("Only PUT/DEL requests should arrive from the BOOTSTRAP server to a KVS.");
+                    //std::cout << "SERVER ERROR: Only PUT/DEL requests should arrive from the BOOTSTRAP server to a KVS.";
+                }
+
+            }
+
+            if (response.tuples_size() > 0 && request.response_address() != "") {
+
+                string serialized_response;
+                response.SerializeToString(&serialized_response);
+                //log->info("SERVER: Sending back <KeyResponse> message to {} ...", request.response_address());
+                kZmqUtil->send_string(serialized_response,
+                                      &pushers[request.response_address()]);
+                //log->info("OK");
+            }
+
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("RECEIVE STORE REQUEST: {}",time_elapsed);
+
+        }
+
+        // Key_replication_map update
+        if (pollitems[11].revents & ZMQ_POLLIN) {
+            auto start = std::chrono::system_clock::now();
+
+            string serialized = kZmqUtil->recv_string(&update_puller);
+            UpdateKeyMessage update_message;
+            update_message.ParseFromString(serialized);
+
+            //log->info("Key_replication_map UPDATE MESSAGE HAS ARRIVED");
+
+            for (const auto &key_update : update_message.key_updates()) {
+                Key key = key_update.key();
+                Address master = key_update.master();
+                key_replication_map[key].master_address_ = master;
+                key_replication_map[key].slave_addresses_.clear();
+                for (const auto &slave : key_update.slaves()) {
+                    key_replication_map[key].slave_addresses_.insert(slave);
+                }
+            }
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("RECEIVE KRM UPDATE REQUEST: {}",time_elapsed);
+        }
+
+        // Slave Update request
+        if (pollitems[12].revents & ZMQ_POLLIN) {
+            auto start = std::chrono::system_clock::now();
+
+            string serialized = kZmqUtil->recv_string(&slave_update_puller);
+
+            KeyRequest request;
+            request.ParseFromString(serialized);
+            RequestType request_type = request.type();
+
+            KeyResponse response;
+            string response_id = request.request_id();
+            response.set_response_id(request.request_id());
+            response.set_type(request.type());
+
+            if (request_type == RequestType::UPDATE) {
+
+                // iterating through the keys
+                for (const auto &tuple : request.tuples()) {
+                    Key key = tuple.key();
+                    string payload = tuple.payload();
+
+                    // If the slave is not in this KVS
+                    if (key_replication_map[key].slave_addresses_.find(wt.public_ip()) ==
+                        key_replication_map[key].slave_addresses_.end()) {
+
+                       // log->error("The requested key {}'s slave is not stored in this KVS.");
+                    } else {
+                        // CHECKME: init key replication
+                        init_replication(key_replication_map, key);
+
+                        // store the key and its value
+                        process_put(key, tuple.lattice_type(), payload,
+                                    serializers[tuple.lattice_type()], stored_key_map, true);
+                        local_changeset.insert(key);
+
+                        KeyTuple *tp = response.add_tuples();
+                        tp->set_key(key);
+                        tp->set_lattice_type(tuple.lattice_type());
+                    }
+
+                }
+            } else {
+                log->error("Only UPDATE requests should arrive on this port");
+            }
+
+            if (response.tuples_size() > 0 && request.response_address() != "") {
+
+                string serialized_response;
+                response.SerializeToString(&serialized_response);
+                kZmqUtil->send_string(serialized_response,
+                                      &pushers[request.response_address()]);
+            }
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("RECEIVE SLAVE UPDATE: {}",time_elapsed);
+        }
+
+
+        // gossip updates to other threads
+        gossip_end = std::chrono::system_clock::now();
+        if (std::chrono::duration_cast<std::chrono::microseconds>(gossip_end -
+                                                                  gossip_start)
+                    .count() >= PERIOD) {
+            auto work_start = std::chrono::system_clock::now();
+            // only gossip if we have changes
+            if (local_changeset.size() > 0) {
+                AddressKeysetMap addr_keyset_map;
 
         bool succeed;
         for (const Key &key : local_changeset) {
@@ -484,18 +778,83 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
                         report_end - report_start)
                         .count();
 
-    if (duration >= kServerReportThreshold) {
-      epoch += 1;
-      auto ts = generate_timestamp(wt.tid());
+        if (duration >= kServerReportThreshold) {
 
-      Key key =
-          get_metadata_key(wt, kSelfTier, wt.tid(), MetadataType::server_stats);
+            auto start = std::chrono::system_clock::now();
 
-      // compute total storage consumption
-      unsigned long long consumption = 0;
-      for (const auto &key_pair : stored_key_map) {
-        consumption += key_pair.second.size_;
-      }
+
+            /*
+            /////////////////////////////////////////////////////////////////////////
+            log->info("DEBUG: (STAT) ---------------------------------------------------");
+            log->info("DEBUG: (STAT) Content of the stored_key_map at round {}:", epoch);
+            for (const auto &key_pair : stored_key_map) {
+                if (key_pair.first.find("METADATA") == std::string::npos) {
+                    log->info("DEBUG: (STAT)\t Key: '{}'\tMaster: '{}'\tMasterAddress: '{}'\tSize: '{}' ", key_pair.first,
+                              std::to_string(key_pair.second.master_), key_pair.second.master_address_,
+                              std::to_string(key_pair.second.size_));
+                }
+            }
+            log->info("DEBUG: (STAT) Content of the key_replication_map at round {}:", epoch);
+            for (const auto &key_rep : key_replication_map) {
+                if (key_rep.first.find("METADATA") == std::string::npos) {
+                    log->info("DEBUG: (STAT) \t - Key: '{}'\t Master address: '{}'\tSlave addresses:", key_rep.first,
+                              key_rep.second.master_address_);
+                    for (const auto &slave : key_rep.second.slave_addresses_) {
+                        log->info("DEBUG: (STAT) \t\t\t\t\t\t *  {}", slave);
+                    }
+                }
+            }
+            log->info("DEBUG: (STAT) Connected KVS servers to the cluster (round {}):", epoch);
+            for (const ServerThread &st : global_hash_rings[Tier::MEMORY].get_unique_servers()) {
+                log->info("DEBUG: (STAT)\t - {}", st.id());
+            }
+            log->info("DEBUG: (STAT) ---------------------------------------------------");
+            log->info("\n");
+            /////////////////////////////////////////////////////////////////////////
+            */
+
+            epoch += 1;
+            auto ts = generate_timestamp(wt.tid());
+
+            //------------------------------------------------------------------------
+            for (ServerThread st : global_hash_rings[Tier::MEMORY].get_unique_servers()) {
+                //std::cout << "SERVER: Creating the DelayRequest to " + st.delay_request_connect_address() + "\n";
+                DelayRequest delay_request;
+
+                // generating ID
+                if (++rid_ % 10000 == 0) rid_ = 0;
+                auto request_id = public_ip + ":" + std::to_string(thread_id) + "_" + std::to_string(rid_++);
+                delay_request.set_request_id(request_id);
+
+                // set timestamp
+                delay_request.set_timestamp(ts);
+
+                // set response address
+                delay_request.set_response_address(wt.delay_response_connect_address());
+                //std::cout << "ROUTE: Set response address to "+st.delay_response_connect_address()+" of DelayRequest.\n";
+
+                // set target address
+                Address target_address = st.delay_request_connect_address();
+
+                //std::cout << "SERVER: Sending DelayRequest out to "+target_address+"\n";
+                // sending out the request
+                string serialized_req;
+                delay_request.SerializeToString(&serialized_req);
+                kZmqUtil->send_string(serialized_req, &pushers[target_address]);
+                //log->info("SERVER: SENDING DelayRequest out to {}", target_address);
+
+            }
+            //------------------------------------------------------------------------
+
+            Key key =
+                    get_metadata_key(wt, kSelfTier, wt.tid(), MetadataType::server_stats);
+
+            // log->info("DEBUG (delete it): Stat key {}:", key);
+            // compute total storage consumption
+            unsigned long long consumption = 0;
+            for (const auto &key_pair : stored_key_map) {
+                consumption += key_pair.second.size_;
+            }
 
       int index = 0;
       for (const unsigned long long &time : working_time_map) {
@@ -542,35 +901,84 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
       KeyAccessData access;
       auto current_time = std::chrono::system_clock::now();
 
-      for (const auto &key_access_pair : key_access_tracker) {
-        Key key = key_access_pair.first;
-        auto access_times = key_access_pair.second;
+            for (const auto &key_access_pair : key_get_access_tracker) {
+                Key key = key_access_pair.first;
 
-        // garbage collect
-        for (const auto &time : access_times) {
-          if (std::chrono::duration_cast<std::chrono::seconds>(current_time -
-                                                               time)
-                  .count() >= kKeyMonitoringThreshold) {
-            access_times.erase(time);
-            break;
-          }
-        }
+                // update get key_access_frequency
+                KeyAccessData_KeyCount *tp = access.add_keys();
+                tp->set_key(key);
+                tp->set_access_type("GET");
 
-        // update key_access_frequency
-        KeyAccessData_KeyCount *tp = access.add_keys();
-        tp->set_key(key);
-        tp->set_access_count(access_times.size());
-      }
+                for (const auto &server_access_pair : key_access_pair.second) {
+                    // requester_address = server_access_pair.first;
+                    auto access_times_set = server_access_pair.second;
 
-      // report key access stats
-      key = get_metadata_key(wt, kSelfTier, wt.tid(), MetadataType::key_access);
-      string serialized_access;
-      access.SerializeToString(&serialized_access);
+                    // garbage collect
+                    //FIXME:
+                    int times_to_delete = 0;
+                    for (const auto &time : access_times_set) {
+                        if (std::chrono::duration_cast<std::chrono::seconds>(current_time -
+                                                                             time)
+                                    .count() >= kServerReportThreshold) {
+                            times_to_delete++;
+                        }
+                    }
 
-      req.Clear();
-      req.set_type(RequestType::PUT);
-      prepare_put_tuple(req, key, LatticeType::LWW,
-                        serialize(ts, serialized_access));
+                    auto access_time_count = access_times_set.size() - times_to_delete;
+
+                    //log->info("KEY {} had {} GET IN THIS TIME WINDOW", key, access_time_count);
+
+                    KeyAccessData_KeyCount_ServerAccess *tp2 = tp->add_accesses();
+                    tp2->set_requester_address(server_access_pair.first);
+                    tp2->set_access_count(access_time_count);
+                }
+            }
+
+            // compute key PUT access stats
+            current_time = std::chrono::system_clock::now();
+
+            for (const auto &key_access_pair : key_put_access_tracker) {
+                Key key = key_access_pair.first;
+
+                // update get key_access_frequency
+                KeyAccessData_KeyCount *tp = access.add_keys();
+                tp->set_key(key);
+                tp->set_access_type("PUT");
+
+                for (const auto &server_access_pair : key_access_pair.second) {
+                    auto requester_address = server_access_pair.first;
+                    auto access_times_set = server_access_pair.second;
+
+                    // garbage collect
+                    int times_to_delete = 0;
+                    for (const auto &time : access_times_set) {
+                        if (std::chrono::duration_cast<std::chrono::seconds>(current_time -
+                                                                             time)
+                                    .count() >= kServerReportThreshold) {
+                            times_to_delete++;
+                        }
+                    }
+
+                    auto access_time_count = access_times_set.size() - times_to_delete;
+                    //log->info("KEY {} HAD {} PUT IN THIS TIME WINDOW", key, access_time_count);
+
+                    KeyAccessData_KeyCount_ServerAccess *tp2 = tp->add_accesses();
+                    tp2->set_requester_address(requester_address);
+                    tp2->set_access_count(access_time_count);
+                }
+            }
+
+            // report key access stats
+            key = get_metadata_key(wt, kSelfTier, wt.tid(), MetadataType::key_access);
+            string serialized_access;
+            access.SerializeToString(&serialized_access);
+
+            // log->info("DEBUG (delete it): Report key access stats, key {}:", key);
+
+            req.Clear();
+            req.set_type(RequestType::PUT);
+            prepare_put_tuple(req, key, LatticeType::LWW,
+                              serialize(ts, serialized_access));
 
       threads = kHashRingUtil->get_responsible_threads_metadata(
           key, global_hash_rings[Tier::MEMORY], local_hash_rings[Tier::MEMORY]);
@@ -667,11 +1075,17 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
         }
       }
 
-      // reset stats tracked in memory
-      working_time = 0;
-      access_count = 0;
-      memset(working_time_map, 0, sizeof(working_time_map));
-    }
+            // reset stats tracked in memory
+            working_time = 0;
+            access_count = 0;
+            memset(working_time_map, 0, sizeof(working_time_map));
+
+            auto time_elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::system_clock::now() - start)
+                    .count();
+            //log->info("PERIODIC REPORT: {}",time_elapsed);
+
+        }
 
     // redistribute data after node joins
     if (join_gossip_map.size() != 0) {
