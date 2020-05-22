@@ -14,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+cd /hydro/anna
+
 if [ -z "$1" ] && [ -z "$2" ]; then
   echo "Usage: ./$0 build start-user"
   echo ""
@@ -25,7 +27,15 @@ if [ "$1" = "y" ] || [ "$1" = "yes" ]; then
   ./scripts/build.sh
 fi
 
-cp conf/anna-local.yml conf/anna-config.yml
+echo "And now we're waiting for the config file..."
+
+# Do not start the server until conf/anna-config.yml has been copied onto this
+# pod -- if we start earlier, we won't now how to configure the system.
+while [[ ! -f "conf/anna-config.yml" ]]; do
+  continue
+done
+
+echo "conf/anna-config.yml"
 
 echo "Starting Anna Monitor daemon..."
 ./build/target/kvs/anna-monitor &
@@ -47,3 +57,6 @@ echo $SPID >> pids
 if [ "$2" = "y" ] || [ "$2" = "yes" ]; then
   ./build/cli/anna-cli conf/anna-local.yml
 fi
+
+#Extra line added in the script to run all command line arguments
+exec "/bin/bash"

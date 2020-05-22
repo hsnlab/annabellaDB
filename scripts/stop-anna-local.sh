@@ -14,6 +14,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
 if [ -z "$1" ]; then
   echo "Usage: ./$0 remove-logs"
   exit 1
@@ -23,8 +28,25 @@ while IFS='' read -r line || [[ -n "$line" ]] ; do
   kill $line
 done < "pids"
 
+for i in $(ps aux | grep anna-monitor | awk '{print $2}');
+  do
+    sudo kill -9 $i
+  done
+
+for i in $(ps aux | grep anna-route | awk '{print $2}');
+  do
+    sudo kill -9 $i
+  done
+
+for i in $(ps aux | grep anna-kvs | awk '{print $2}');
+  do
+    sudo kill -9 $i
+  done
+
+
 if [ "$1" = "y" ]; then
   rm *log*
+  rm asd*
 fi
 
 rm conf/anna-config.yml
