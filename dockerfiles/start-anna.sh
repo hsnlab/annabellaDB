@@ -19,6 +19,8 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+echo "It's starting :)"
+
 # A helper function that takes a space separated list and generates a string
 # that parses as a YAML list.
 gen_yml_list() {
@@ -57,12 +59,10 @@ if [[ -z "$REPO_BRANCH" ]]; then
   REPO_BRANCH="master"
 fi
 
-git remote add origin https://github.com/$REPO_ORG/anna
-git fetch -p origin
-git checkout -b brnch origin/$REPO_BRANCH
 
 # Compile the latest version of the code on the branch we just check out.
-cd build && make -j2 && cd ..
+
+echo "And now we're waiting for the config file..."
 
 # Do not start the server until conf/anna-config.yml has been copied onto this
 # pod -- if we start earlier, we won't now how to configure the system.
@@ -113,6 +113,8 @@ else
   LST=$(gen_yml_list "$ROUTING_IPS")
   echo -e "    routing:" >> conf/anna-config.yml
   echo -e "$LST" >> conf/anna-config.yml
+
+  cat $HYDRO_HOME/anna/conf/anna-config.yml
 
   ./build/target/kvs/anna-kvs
 fi
