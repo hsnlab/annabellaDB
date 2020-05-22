@@ -65,7 +65,8 @@ class AnnaTcpClient(BaseAnnaClient):
 
         self.context = zmq.Context(1)
 
-        self.address_cache = {}
+        self.get_address_cache = {}
+        self.put_address_cache = {}
         self.pusher_cache = SocketCache(self.context, zmq.PUSH)
 
         self.response_puller = self.context.socket(zmq.PULL)
@@ -82,7 +83,11 @@ class AnnaTcpClient(BaseAnnaClient):
 
         worker_addresses = {}
         for key in keys:
-            worker_addresses[key] = (self._get_worker_address(key))
+            worker_addresses[key] = (self._get_worker_address(key, 1))
+        #print("Worker Address: {}".format(worker_addresses[key]))
+
+        if type(worker_addresses[key]) == list:
+            worker_addresses[key] = worker_addresses[key][0]
 
         # Initialize all KV pairs to 0. Only change a value if we get a valid
         # response from the server.
@@ -108,9 +113,9 @@ class AnnaTcpClient(BaseAnnaClient):
         for response in responses:
             for tup in response.tuples:
                 if tup.invalidate:
-                    self._invalidate_cache(tup.key)
+                    self._invalidate_cache(tup.key, 'get')
 
-                if tup.error == NO_ERROR:
+                if tup.error == NO_ERROR and not tup.invalidate:
                     kv_pairs[tup.key] = self._deserialize(tup)
 
         return kv_pairs
@@ -162,7 +167,10 @@ class AnnaTcpClient(BaseAnnaClient):
         return kv_pairs
 
     def put(self, key, value):
-        worker_address = self._get_worker_address(key)
+        port = random.choice(self.elb_ports)
+        worker_address = self._query_routing(key, port)
+        if type(worker_address) == list:
+            worker_address = worker_address[0]
 
         if not worker_address:
             return False
@@ -227,24 +235,84 @@ class AnnaTcpClient(BaseAnnaClient):
     # Returns the worker address for a particular key. If worker addresses for
     # that key are not cached locally, a query is synchronously issued to the
     # routing tier, and the address cache is updated.
-    def _get_worker_address(self, key, pick=True):
-        if key not in self.address_cache:
-            port = random.choice(self.elb_ports)
-            addresses = self._query_routing(key, port)
-            self.address_cache[key] = addresses
+    def _get_worker_address(self, key, access_type, pick=True):
+        insert_to_cache = False
+        monitor_address = None
 
-        if len(self.address_cache[key]) == 0:
-            return None
+        #if it's a GET
+        if access_type == 1:
+            if key not in self.get_address_cache:
+                #Key is not in cache
+                port = random.choice(self.elb_ports)
+                addresses = self._query_routing(key, port)
+                addresses = list(set(addresses))
+                for address in addresses:
+                    #TODO: Change here the IP to the address of the Master node!
+                    if address != "tcp://192.168.0.31:5900":
+                        self.get_address_cache[key] = []
+                        self.get_address_cache[key].append(address)
+                    else:
+                        monitor_address = address
+                #print(self.get_address_cache)
 
-        if pick:
-            return random.choice(self.address_cache[key])
-        else:
-            return self.address_cache[key]
+            if len(self.get_address_cache[key]) == 0:
+                return None
+
+            if pick:
+                return random.choice(self.get_address_cache[key])
+            else:
+                return self.get_address_cache[key]
+
+        # if it's a PUT
+        if access_type == 2:
+            if key not in self.put_address_cache:
+                #print("Key is not in cache")
+                port = random.choice(self.elb_ports)
+                #print("Port: {}".format(port))
+                addresses = self._query_routing(key, port)
+                addresses = list(set(addresses))
+                #print(addresses)
+                #print(self.put_address_cache)
+                for address in addresses:
+                    #TODO: Change here the IP to the address of the Master node!
+                    if address != "tcp://192.168.0.31:5900":
+                        self.put_address_cache[key] = []
+                        self.put_address_cache[key].append(address)
+                        insert_to_cache = True
+                    else:
+                        monitor_address = address
+                #print(self.put_address_cache)
+
+            if len(self.put_address_cache[key]) == 0:
+                #print('1')
+                return None
+
+            if pick:
+                #print('2')
+                return random.choice(self.put_address_cache[key])
+            else:
+                #print('3')
+                return self.put_address_cache[key]
+
+
+
 
     # Invalidates the address cache for a particular key when the server tells
     # the client that its cache is out of date.
-    def _invalidate_cache(self, key):
-        del self.address_cache[key]
+    def _invalidate_cache(self, key, type='both'):
+        if type == 'get':
+            del self.get_address_cache[key]
+        elif type == 'put':
+            del self.put_address_cache[key]
+        else:
+            try:
+                del self.get_address_cache[key]
+            except KeyError:
+                pass
+            try:
+                del self.put_address_cache[key]
+            except KeyError:
+                pass
 
     # Issues a synchronous query to the routing tier. Takes in a key and a
     # (randomly chosen) routing port to issue the request to. Returns a list of
@@ -252,6 +320,8 @@ class AnnaTcpClient(BaseAnnaClient):
     # key.
     def _query_routing(self, key, port):
         key_request = KeyAddressRequest()
+
+        key_request.query_type = u'GET'
 
         key_request.response_address = self.ut.get_key_address_connect_addr()
         key_request.keys.append(key)

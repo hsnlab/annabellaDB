@@ -228,8 +228,8 @@ class BaseAnnaClient():
             tuples.append(tup)
             tup.key = key
 
-            if self.address_cache and key in self.address_cache:
-                tup.address_cache_size = len(self.address_cache[key])
+            if self.get_address_cache and key in self.get_address_cache:
+                tup.address_cache_size = len(self.get_address_cache[key])
 
         return (req, tuples)
 

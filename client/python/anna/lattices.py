@@ -68,8 +68,10 @@ class Lattice:
 
 class LWWPairLattice(Lattice):
     def __init__(self, timestamp, value):
-        if type(timestamp) != int or type(value) != bytes:
-            raise ValueError('LWWPairLattice must be a timestamp-bytes pair.')
+        if type(timestamp) != int and type(timestamp) != long:
+            raise ValueError('The first element of LWWPairLattice must be a timestamp: {} and its type: {}'.format(timestamp, type(timestamp)))
+        if  type(value) != bytes:
+            raise ValueError('The second element of LWWPairLattice must be bytes: {}'.format(value))
 
         self.ts = timestamp
         self.val = value

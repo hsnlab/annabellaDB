@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import time
 
 def send_request(req_obj, send_sock):
     req_string = req_obj.SerializeToString()
@@ -19,12 +20,20 @@ def send_request(req_obj, send_sock):
     send_sock.send(req_string)
 
 
-def recv_response(req_ids, rcv_sock, resp_class):
+def recv_response(req_ids, rcv_sock, resp_class, timeout=10):
     responses = []
 
     while len(responses) < len(req_ids):
         resp_obj = resp_class()
-        resp = rcv_sock.recv()
+        before = time.time()
+        after = time.time()
+        while((after-before) < timeout):
+            try:
+                resp = rcv_sock.recv(flags=1)
+                break
+            except:
+                pass
+            after = time.time()
         resp_obj.ParseFromString(resp)
 
         while resp_obj.response_id not in req_ids:
