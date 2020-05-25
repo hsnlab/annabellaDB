@@ -126,7 +126,7 @@ saves them into a file.
 5. After the client has finished on _kvs2_, run a new one on _kvs3_
 6. After the client has finished on _kvs3_, run a new one on _kvs4_ 
 7. Collects the measured access times into a pandas dataframe
-8. Depicts it on a plotly plot
+8. Depicts it on a plotly plot save as _interDC_latency_test1_annaBellaDB<...>.html_ in _/annabellaDB_ dir
 9. Finally, stops the cluster
 
 ### InterDC Throughput Test1
@@ -147,7 +147,7 @@ into a file.
 5. After the client has finished on _kvs2_, run a new one on _kvs3_
 6. After the client has finished on _kvs3_, run a new one on _kvs4_ 
 7. Collects the measured access counts into a pandas dataframe
-8. Depicts it on a plotly plot
+8. Depicts it on a plotly plot save as _interDC_throughput_test1_annaBellaDB<...>.html_ in _/annabellaDB_ dir
 9. Finally, stops the cluster
 
 ### InterDC Latency Test2
@@ -161,16 +161,38 @@ This script performs the followings:
 1. Starts Bootstrap server (_kvs1_)
 2. Starts the other servers (_kvs2, kvs3, kvs4_)
 3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+client will PUT the key/value one time and read it 10 times in a sec.
+4. After 40 seconds, run a new client on _kvs2_
+5. After 40 seconds, run a new client on _kvs2_
+6. After 40 seconds, run a new client on _kvs3_
+7. Repeats step 6 five times
+8. Stops all clients
+9. Collects the measured access times into a pandas dataframe
+10. Depicts it on a plotly plot save as _interDC_latency_test2_annaBellaDB<...>.html_ in _/annabellaDB_ dir
+11. Finally, stops the cluster
+
+### InterDC Throughput Test2
+
+To run this measurement, execute the command from _annabellaDB_ directory:
+```
+python3 scripts/start_interDC_throughput_test2.py y
+```
+
+This script performs the followings:
+1. Starts Bootstrap server (_kvs1_)
+2. Starts the other servers (_kvs2, kvs3, kvs4_)
+3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
 client will PUT the key/value 26 times and read it 260 times in a sec.
 4. After 40 seconds, run a new client on _kvs2_
 5. After 40 seconds, run a new client on _kvs2_
-6. Repeats step 5
 7. After 40 seconds, run a new client on _kvs3_
-8. Repeats step 7 five times
-9. Stops all clients
-10. Collects the measured access times into a pandas dataframe
-11. Depicts it on a plotly plot
-12. Finally, stops the cluster
+8. Repeats step 5 five times
+9. After 40 seconds, run a new client on _kvs4_
+9. Repeats step 8 five times
+10. Stops all clients
+11. Collects the measured access times into a pandas dataframe
+12. Depicts it on a plotly plot and save as _interDC_throughput_test2_annaBellaDB<...>.html_ in _/annabellaDB_ dir
+13. Finally, stops the cluster
 
 ## TODOs:
 
