@@ -16,7 +16,11 @@ More info about AnnaDB can be found at:
 First of all, you need to install all dependencies of the building process:
 
 ```
-TODO
+sudo apt update
+cd common
+sudo ./scripts/install-dependencies.sh
+cd ../client/python
+./compile.sh 
 ```
 
 To build the code, execute the following command in the _/annabellaDB_ directory:
@@ -53,6 +57,12 @@ sudo ./scripts/stop-anna-local.sh y
 It is possible to create AnnaBellaDB cluster, where the the cluster elements (i.e., the AnnaBella nodes) are Docker containers.
 Currently, there is no official AnnaBellaDB container, that is why we are going to use the base container for AnnaDB (https://hub.docker.com/r/hydroproject/base)
 and install the auxiliary apps and build the AnnaBellaDB inside it. 
+
+First of all, you need to install docker, if you have not done it yet:
+```
+sudo apt install docker.io
+sudo apt install python-pip
+```
 
 Two kinds of AnnaBellaDB instance role exist: i) the bootstrap server and ii) the normal key-value store server. 
 For the former the _MasterDockerfile_, while for the latter the _SlaveDockerfile_ is used. Both are located in the _conf_ directory.
@@ -108,6 +118,14 @@ to get a picture about its performance. We have used multiple clients accessing 
 
 Our cluster includes 4 AnnaBellaDB instance (_kvs1, kvs2, kvs3, kvs4_). Each of them is able to store data and the placement algorithm
 is running on the Bootstrap container, i.e., on _kvs1_.
+
+Install dependencies:
+```
+sudo apt install python3-pip
+sudo pip3 install docker seaborn plotly
+
+# IMPORTANT: enable your user to use docker without sudo!
+```
 
 ### InterDC Latency Test1
 
