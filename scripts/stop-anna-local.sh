@@ -46,7 +46,6 @@ for i in $(ps aux | grep anna-kvs | awk '{print $2}');
 
 if [ "$1" = "y" ]; then
   rm *log*
-  rm asd*
 fi
 
 rm conf/anna-config.yml

@@ -12,23 +12,18 @@ unsigned rid_ = 0;
 
 void print_current_mapping(map<std::string, NodeAsPlacementDest> mapping, logger log) {
     log->info("\tCurrent Mapping ---------------------------");
-    std::cout << "Current Mapping:\n";
 
     auto it = mapping.begin();
 
     // Iterate over the map using Iterator till end.
     while (it != mapping.end()) {
         log->info("\t{}: {}", it->second.st.public_ip(), it->second.capacity - it->second.load);
-        std::cout << "Host: " << it->second.st.public_ip() << ", Free capacity: "
-                  << it->second.capacity - it->second.load << ", Stored replicas:\n";
         for (const auto &replica :it->second.replicas) {
             log->info("\t\t - {}", replica);
-            std::cout << "\t - " << replica << "\n";
         }
         it++;
     }
     log->info("\t-----------------------------");
-    std::cout << "-----------------------------\n";
 }
 
 set<Key> masters;
@@ -81,8 +76,6 @@ std::vector<std::pair<Address, double>>
 get_closest_hosts(set<Address> &hosts, map<Address, double> &access_hosts, Key state, double data_size,
                   map<std::string, NodeAsPlacementDest> &mapping, map<Key, map<Key, double>> delay_matrix) {
 
-    std::cout << "---Start get closest hosts for key " << state << "\n";
-
     // host and cost
     typedef std::pair<Address, double> pair;
     std::vector<pair> closest_hosts;
@@ -91,18 +84,13 @@ get_closest_hosts(set<Address> &hosts, map<Address, double> &access_hosts, Key s
 
 
     for (const auto &candidate_host : hosts) {
-        std::cout << "Candidate host: " << candidate_host << "\n";
 
         double cost = 0;
         for (const auto &access_host:access_hosts) {
             auto rate = access_host.second;
-            std::cout << "*Rate for host " << access_host.first << " is: " << rate << "\n";
             cost += delay_matrix[candidate_host][access_host.first] * rate;
-            std::cout << "*Cost for host " << access_host.first << " is: "
-                      << delay_matrix[candidate_host][access_host.first] * rate << "\n";
         }
         closest_hosts.emplace_back(candidate_host, cost);
-        std::cout << "*Sum cost: " << cost << "\n";
     }
 
     // sort the closest host vector to increasing order
@@ -114,11 +102,6 @@ get_closest_hosts(set<Address> &hosts, map<Address, double> &access_hosts, Key s
                   return l.first < r.first;
               });
 
-    for (auto const &pair: closest_hosts) {
-        std::cout << "Sorted closest hosts: {" << pair.first << "," << pair.second << "}" << "\n";
-    }
-
-    std::cout << "---End get Closest Hosts\n";
     return closest_hosts;
 
 }
@@ -181,7 +164,6 @@ Key get_state_to_move(Address most_loaded_node, set<Key> banned_states_for_state
 
             std::string delimiter = "|";
             Key master = replica.substr(2, replica.find(delimiter));
-            std::cout << "Master of " << replica << " is " << master << "\n";
             //FIXME: It think this need to be reconsidered
             for (const auto writing_rate_obj : writer_rates[master]) {
                 moving_cost += writing_rate_obj.second;
@@ -359,7 +341,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
         if (key_replication_map.find(key) == key_replication_map.end() || replacement) {
 
             //log->info("\tThe requested key '{}' has not stored yet in the cluster", key);
-            //std::cout << "BOOTSTRAP:  The requested key " + key + " has not stored yet in the cluster\n";
 
             //FIXME: masters-be az összes key-t beletenni
             masters.insert(key);
@@ -442,9 +423,7 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
             }
 
             log->info("\tAvailable hosts in the cluster:");
-            std::cout << "Available hosts in the cluster:\n";
             for (const auto &h :hosts) {
-                std::cout << "\t - " << h << "\n";
                 log->info("\t\t - {}", h);
             }
 
@@ -494,7 +473,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
 
                     // If the state does have slave replica(s), and is read by only one host            || pseudocode:11
                 else if (reader_rates[s].size() == 1) {
-                    std::cout << "If the state does have slave replica(s), and is read by only one host\n";
                     log->info("\t\t\tIf the state does have slave replica(s), and is read by only one host");
                     //pseudocode:12
                     Address candidate_host_for_master = getOptimalHosts(hosts, access_hosts, s, sizeof(payload),
@@ -522,8 +500,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
 
                     // If the state does have slave replica(s), and is read by multiple function instance
                 else {
-
-                    std::cout << "Placement: state have slave replica(s), and is read by multiple function instance\n";
                     log->info("\t\t\tstate have slave replica(s), and is read by multiple function instance");
 
                     // Sorting reader hosts according their reading rates in decreasing order --------------------------
@@ -543,11 +519,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
                                   return l.first < r.first;
                               });
 
-                    // print the vector
-                    for (auto const &pair: sorted_reader_hosts) {
-                        std::cout << "Sorted reader hosts: {" << pair.first << "," << pair.second << "}" << "\n";
-                    }
-
                     // list of replica <-> reader hosts assignments ------------------------------------------------
                     //typedef map<std::string, Address> Assignment;
                     typedef std::pair<std::string, Address> Assignment;
@@ -560,7 +531,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
                     // Spread out replicas over the functions
                     if (requested_slave_num <
                         reader_rates[s].size()) {                            // || pseudocode: 23
-                        std::cout << "more reader hosts exist than the required slave replica number\n";
                         log->info("\t\t\tMore reader hosts exist than the required slave replica number");
                         int i = 0;
                         for (const auto slave : slaves_of_master[s]) {
@@ -588,7 +558,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
 
                         // Spread out replicas over the functions                                           || pseudocode:28
                     else if (requested_slave_num >= reader_rates[s].size()) {
-                        std::cout << "replica number is greater equal then the number of reader hosts\n";
                         log->info("\t\t\tReplica number is greater equal then the number of reader hosts");
                         int i = 0;
                         for (const auto slave : slaves_of_master[s]) {
@@ -622,13 +591,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
                         }
                     }
 
-                    it = assigned_hosts.begin();
-                    while (it != assigned_hosts.end()) {
-                        std::cout << "Assigned hosts for " << s << ": from " << it->first << " and weight: "
-                                  << it->second << "\n";
-                        it++;
-                    }
-
                     // Find the optimal destination hosts for master without hosts' capacity check
                     Address candidate_host = getOptimalHosts(hosts, assigned_hosts, s, sizeof(payload), banned_hosts,
                                                              mapping,
@@ -651,13 +613,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
                             }
                         }
 
-                        it = assigned_hosts.begin();
-                        while (it != assigned_hosts.end()) {
-                            std::cout << "Assigned hosts for " << slave << ": from " << it->first << " and weight: "
-                                      << it->second << "\n";
-                            it++;
-                        }
-
                         // Find the optimal destination hosts for master without hosts' capacity check
                         Address candidate_host_for_slave = getOptimalHosts(hosts, assigned_hosts, slave,
                                                                            sizeof(payload), banned_hosts,
@@ -665,7 +620,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
                                                                            delay_matrix, log);
                         if (candidate_host_for_slave == "there_is_no_suitable_host") {
                             log->error("Placement: There is no suitable host for key {}", slave);
-                            std::cout << "Placement: There is no suitable host for key " << slave << "\n";
                             //FIXME: Throw an exception
                             break;
                         }
@@ -713,7 +667,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
 
             if (state_to_move != "None") {
                 log->info("\t\t\tState movement is necessary...\n");
-                std::cout << "State movement is necessary...\n";
             }
 
             int break_iter = 0;
@@ -801,18 +754,8 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
             // Clean the unnecessary settings
             //FIXME: maybe another reader_rates map should be used in the flooding placement method
             // and not the same which is declared in monitoring.cpp
-            std::cout << "DELETE UNNECESSARY THINGS\n";
-            for (const auto &i: slaves_of_master) {
-                std::cout << "Key: " << i.first << "\n";
-                std::cout << "Slaves of key " << i.first << ":\n";
-                for (const auto &j : i.second) {
-                    std::cout << j << "\n";
-                }
-            }
             for (const auto &m : masters) {
-                std::cout << "Master: " << m << "\n";
                 for (const auto &slave: slaves_of_master[m]) {
-                    std::cout << "Delete " << slave << " from reader_rates\n";
                     reader_rates.erase(slave);
                 }
             }
@@ -820,7 +763,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
             masters.clear();
 
             log->info("### FLOODING placement has finished ###########################################\n");
-            std::cout << "FLOODING placement has finished\n";
 
         }
 
@@ -972,10 +914,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
         } else {
             log->info("BOOTSTRAP: Forward MASTER <KeyRequest> (formerly <StoreReq>) to the KVS {}",
                       master_target_address);
-            std::cout
-                    << "BOOTSTRAP: Forward MASTER <KeyRequest> (formerly <StoreReq>) to the KVS " +
-                       master_target_address +
-                       "\n";
             string serialized_req;
             forwarded_request.SerializeToString(&serialized_req);
             kZmqUtil->send_string(serialized_req, &pushers[master_target_address]);
@@ -983,8 +921,6 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
             //Send the request to the slaves as well.
             for (const auto sa : slave_target_addresses) {
                 log->info("BOOTSTRAP: Forward SLAVE <KeyRequest> (formerly <StoreReq>) to the KVS {}", sa);
-                std::cout << "BOOTSTRAP: Forward SLAVE <KeyRequest> (formerly <StoreReq>) to the KVS " + sa +
-                             "\n";
                 string serialized_req2;
                 forwarded_request.SerializeToString(&serialized_req2);
                 kZmqUtil->send_string(serialized_req2, &pushers[sa]);

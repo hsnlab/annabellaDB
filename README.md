@@ -26,9 +26,25 @@ bash scripts/build.sh -bRelease -j4
 
 The script above is going to generate all binaries into the _build_ directory.
 
-To run a single AnnaBellaDB instance locally, execute:
+To run a single AnnaBellaDB instance locally, execute in the _/annabellaDB_ directory:
+```
+./scripts/start-anna-local.sh n y
+```
+This will open the CLI of the database. Before you are would do anything, please wait at least 20 seconds!! (FIXME: Tackle this BUG).
+
+To write a key/value to the AnnaBellaDB, type the following command in the CLI:
+```
+PUT <key> <value>
 ```
 
+Logically, to read the value of a key:
+```
+GET <key>
+```
+
+To STOP AnnaBellaDB, run the following in the _/annabellaDB_ directory of the repository:
+```
+sudo ./scripts/stop-anna-local.sh y
 ```
 
 

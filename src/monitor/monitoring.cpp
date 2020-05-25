@@ -262,11 +262,9 @@ int main(int argc, char *argv[]) {
 
         if (pollitems[4].revents & ZMQ_POLLIN) {
             string serialized = kZmqUtil->recv_string(&key_request_puller);
-            std::cout << "MONITORING: KeyRequest received.\n";
             flooding_placement_handler(log, serialized, global_hash_rings, pushers, key_replication_map,
                                        local_change_set, delay_matrix, host_statuses, slaves_of_master, writer_rates,
                                        reader_rates, response_puller);
-            std::cout << "MONITORING: KeyRequest handled :)\n";
         }
 
 

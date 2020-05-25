@@ -1,0 +1,40 @@
+monitoring:
+  mgmt_ip: {MASTER_DOCKER_IP}
+  ip: {MASTER_DOCKER_IP}
+routing:
+  monitoring:
+    - {MASTER_DOCKER_IP}
+  ip: {DOCKER_IP}
+user:
+  monitoring:
+    - {MASTER_DOCKER_IP}
+  routing:
+    - {DOCKER_IP}
+  ip: {DOCKER_IP}
+server:
+  monitoring:
+    - {MASTER_DOCKER_IP}
+  routing:
+    - {DOCKER_IP}
+  seed_ip: {MASTER_DOCKER_IP}
+  public_ip: {DOCKER_IP}
+  private_ip: {DOCKER_IP}
+  mgmt_ip: "NULL"
+policy:
+  elasticity: false
+  selective-rep: false
+  tiering: false
+ebs: ./
+capacities: # in GB
+  memory-cap: 1
+  ebs-cap: 0
+threads:
+  memory: 1
+  ebs: 1
+  routing: 1
+  benchmark: 1
+replication:
+  memory: 1
+  ebs: 0
+  minimum: 1
+  local: 1

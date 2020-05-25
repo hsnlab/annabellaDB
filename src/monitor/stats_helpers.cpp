@@ -57,7 +57,6 @@ void collect_internal_stats(
 
     for (const auto &addr_request_pair : addr_request_map) {
         bool succeed;
-        std::cout << "MONITORING: SEND STATS request to " << addr_request_pair.first << "\n";
         auto res = make_request<KeyRequest, KeyResponse>(
                 addr_request_pair.second, pushers[addr_request_pair.first],
                 response_puller, succeed);
