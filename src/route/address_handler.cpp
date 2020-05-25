@@ -12,73 +12,170 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include <iostream>
 #include "route/routing_handlers.hpp"
+
+//FIXME:
+#include "common.hpp"
+#include "requests.hpp"
+#include "threads.hpp"
+#include "types.hpp"
+
+// the current request id
+unsigned rid_ = 0;
+
+
+/**
+     * Generates a unique request ID.
+     */
+string get_request_id(const RoutingThread &ut_) {
+
+    if (++rid_ % 10000 == 0) rid_ = 0;
+    return ut_.ip() + ":" + std::to_string(ut_.tid()) + "_" + std::to_string(rid_++);
+}
+
+//CHECKME:
+/**
+     * Prepare a data request object by populating the request ID, the key for
+     * the request, and the response address. This method modifies the passed-in
+     * KeyRequest and also returns a pointer to the KeyTuple contained by this
+     * request.
+     */
+KeyTuple *prepare_data_request(KeyRequest &request, const Key &key, RoutingThread rt_) {
+
+    request.set_request_id(get_request_id(rt_));
+    request.set_response_address(rt_.response_connect_address());
+
+    KeyTuple *tp = request.add_tuples();
+    tp->set_key(key);
+
+    return tp;
+}
 
 void address_handler(logger log, string &serialized, SocketCache &pushers,
                      RoutingThread &rt, GlobalRingMap &global_hash_rings,
                      LocalRingMap &local_hash_rings,
                      map<Key, KeyReplication> &key_replication_map,
                      map<Key, vector<pair<Address, string>>> &pending_requests,
-                     unsigned &seed) {
-  KeyAddressRequest addr_request;
-  addr_request.ParseFromString(serialized);
+                     unsigned &seed, Address local_address, Address monitoring_ip) {
+    KeyAddressRequest addr_request;
+    addr_request.ParseFromString(serialized);
 
-  KeyAddressResponse addr_response;
-  addr_response.set_response_id(addr_request.request_id());
-  bool succeed;
+    //log->info("DEBUG: ---> ROUTE address_handler:\t Receive KeyAddressRequest ID: {}, KEY: {}",
+    //          addr_request.request_id(), addr_request.keys()[0]);
 
-  int num_servers = 0;
-  for (const auto &pair : global_hash_rings) {
-    num_servers += pair.second.size();
-  }
+    KeyAddressResponse addr_response;
+    addr_response.set_response_id(addr_request.request_id());
+    bool succeed;
 
-  bool respond = false;
-  if (num_servers == 0) {
-    addr_response.set_error(AnnaError::NO_SERVERS);
-
-    for (const Key &key : addr_request.keys()) {
-      KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
-      tp->set_key(key);
+    // Number of servers in the cluster where key could be stored
+    int num_servers = 0;
+    for (const auto &pair : global_hash_rings) {
+        num_servers += pair.second.size();
     }
 
-    respond = true;
-  } else { // if there are servers, attempt to return the correct threads
-    for (const Key &key : addr_request.keys()) {
-      ServerThreadList threads = {};
+    bool respond = false;
+    // if no servers exist in the cluster
+    if (num_servers == 0) {
+        addr_response.set_error(AnnaError::NO_SERVERS);
 
-      for (const Tier &tier : kAllTiers) {
-        threads = kHashRingUtil->get_responsible_threads(
-            rt.replication_response_connect_address(), key, is_metadata(key),
-            global_hash_rings, local_hash_rings, key_replication_map, pushers,
-            {tier}, succeed, seed);
-
-        if (threads.size() > 0) {
-          break;
+        for (const Key &key : addr_request.keys()) {
+            KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
+            tp->set_key(key);
         }
 
-        if (!succeed) { // this means we don't have the replication factor for
-                        // the key
-          pending_requests[key].push_back(std::pair<Address, string>(
-              addr_request.response_address(), addr_request.request_id()));
-          return;
-        }
-      }
-
-      KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
-      tp->set_key(key);
-      respond = true;
-
-      for (const ServerThread &thread : threads) {
-        tp->add_ips(thread.key_request_connect_address());
-      }
+        respond = true;
     }
-  }
+        //TODO: If the bootstrap server is unavailable
 
-  if (respond) {
-    string serialized;
-    addr_response.SerializeToString(&serialized);
 
-    kZmqUtil->send_string(serialized,
-                          &pushers[addr_request.response_address()]);
-  }
+        // if there are servers, attempt to forward the request to the correct server where the key is located
+    else {
+
+        for (const Key &key : addr_request.keys()) {
+
+            // std::cout << "ROUTE: GET KeyAddressRequest message for key '" + key + "'\n";
+
+            ServerThreadList threads = {};
+
+            for (const Tier &tier : kAllTiers) {
+
+                // Checking whether it is already stored in the KVS or that's the first request of the key
+                if (key_replication_map.find(key) == key_replication_map.end()) {
+
+                    // gives back the bootstrap IP
+                    KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
+                    tp->set_key(key);
+                    respond = true;
+                    tp->add_ips(MonitoringThread(monitoring_ip).key_request_connect_address());
+                    log->info(
+                            "ROUTE: requested key '{}' is not stored in key_replication_map. Giving back the Bootstrap's IP {}.",
+                            key,
+                            MonitoringThread(monitoring_ip).key_request_connect_address());
+
+                    if (addr_request.query_type() == "PUT") {
+                        tp->set_request_type(RequestType::PUT);
+                    }
+                    else if(addr_request.query_type() == "GET"){
+                        tp->set_request_type(RequestType::GET);
+                    }
+
+                    // FIXME: Delete this key_rep_savings
+                    // Store key in the key_replication_map
+                    //init_replication(key_replication_map, key);
+                    //key_replication_map[key].master_address_ = local_address;
+                    break;
+                }
+
+                    // If the requested key is already stored in the KVS
+                else {
+                    //TODO: Gives back the right address, where the key is located
+                    log->info("ROUTE: good news, the requested key '{}' has already been stored.", key);
+                    if (addr_request.query_type() == "PUT") {
+
+                        KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
+                        tp->set_key(key);
+                        respond = true;
+                        //FIXME:
+                        Address connect_address = "tcp://" + key_replication_map[key].master_address_ + ":" +
+                                                  std::to_string(kKeyRequestPort);
+                        tp->add_ips(connect_address);
+                        tp->set_request_type(RequestType::PUT);
+                        log->info("ROUTE: Request is a PUT, Returning master address {}", connect_address);
+
+                    } else if (addr_request.query_type() == "GET") {
+                        //FIXME: Gives back not the master but the closest slave address
+                        KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
+                        tp->set_key(key);
+                        respond = true;
+                        //FIXME:
+                        Address slave_addr;
+                        for (const auto &slave : key_replication_map[key].slave_addresses_) {
+                            slave_addr = slave;
+                            break;
+                        }
+                        Address connect_address = "tcp://" + slave_addr + ":" + std::to_string(kKeyRequestPort);
+                        tp->add_ips(connect_address);
+                        tp->set_request_type(RequestType::GET);
+                        log->info("ROUTE: Request is a GET, closest slave address {}", connect_address);
+                    } else {
+                        log->info("ROUTE: WARNING: Unknown request type: {}. Maybe you're using python client?",
+                                  addr_request.query_type());
+                    }
+
+                }
+            }
+
+        }
+    }
+
+    if (respond) {
+
+        log->info("ROUTE: SENDING out <KeyAddressResponse> to {}",addr_request.response_address());
+        string serialized;
+        addr_response.SerializeToString(&serialized);
+
+        kZmqUtil->send_string(serialized,
+                              &pushers[addr_request.response_address()]);
+    }
 }
