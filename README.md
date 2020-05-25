@@ -49,9 +49,63 @@ sudo ./scripts/stop-anna-local.sh y
 
 
 ### Installing via Docker
-TODO
 
-## Performance measurements of AnnaBellaDB
+It is possible to create AnnaBellaDB cluster, where the the cluster elements (i.e., the AnnaBella nodes) are Docker containers.
+Currently, there is no official AnnaBellaDB container, that is why we are going to use the base container for AnnaDB (https://hub.docker.com/r/hydroproject/base)
+and install the auxiliary apps and build the AnnaBellaDB inside it. 
+
+Two kinds of AnnaBellaDB instance role exist: i) the bootstrap server and ii) the normal key-value store server. 
+For the former the _MasterDockerfile_, while for the latter the _SlaveDockerfile_ is used. Both are located in the _conf_ directory.
+
+In order to create the Docker image of the Bootstrap server, run the following in the _/annabellaDB_ dir:
+```
+docker build -t master_annabelladb_image -f dockerfiles/MasterDockerfile .
+```
+
+Similarly, to create the other key-value store servers, run:
+```
+docker build -t slave_annabelladb_image -f dockerfiles/SlaveDockerfile .
+```
+
+By now, both the master and the slave images are available locally on your host. With the following steps, we can create our own AnnaBellaDB cluster:
+* Run an AnnaBella instance with Bootstrap role (from _master_annabelladb_image_)
+```
+docker run -it -d --name kvs1 master_annabelladb_image
+```
+* At this moment, the Bootstrap server is waiting for its configuration file. Please edit the the conf/annabella-master-template.yml (change _{DOCKER_IP}_ tags to the IP address of the master docker container launched before) and copy to the container:
+```
+docker cp conf/annabella-master-template.yml kvs1:/hydro/anna/conf/anna-config.yml"
+```
+
+* To check if the master is running, e.g, see its monitoring logs:
+```
+docker exec -it kvs1 tail -f /hydro/anna/log_monitoring_0.txt 
+```
+
+* By now, the bootstrap server is ready, we need to launch the (slave) AnnaBellaDB instances with key-value store role.
+```
+ docker run -it -d --name kvs2 annabelladb_image
+```
+
+* Modify _conf/annabella-slave-template.yml_ ({DOCKER_IP} and {MASTER_DOCKER_IP})
+
+* Copy it to the container:
+```
+ docker cp conf/annabella-slave-template.yml kvs2:/hydro/anna/conf/anna-config.yml
+```
+
+Now a two nodes cluster is running. You can start more slave containers if you want. To get the CLI:
+```
+docker exec -it kvs1 bash -c "/hydro/anna/build/cli/anna-cli hydro/anna/conf/anna-config.yml
+``` 
+
+
+
+
+
+Please see the following [section](#measuring_scripts), for more details about how to create clusters and run tests on them.
+
+## <a name="measuring_scripts"></a> Performance measurements of AnnaBellaDB
 TODO
 
 ## TODOs:
