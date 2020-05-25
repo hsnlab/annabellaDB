@@ -163,11 +163,14 @@ This script performs the followings:
 3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
 client will PUT the key/value 26 times and read it 260 times in a sec.
 4. After 40 seconds, run a new client on _kvs2_
-5. After 40 seconds, run a new client on _kvs3_
-6. After 40 seconds, run a new client on _kvs4_ 
-7. Collects the measured access times into a pandas dataframe
-8. Depicts it on a plotly plot
-9. Finally, stops the cluster
+5. After 40 seconds, run a new client on _kvs2_
+6. Repeats step 5
+7. After 40 seconds, run a new client on _kvs3_
+8. Repeats step 7 five times
+9. Stops all clients
+10. Collects the measured access times into a pandas dataframe
+11. Depicts it on a plotly plot
+12. Finally, stops the cluster
 
 ## TODOs:
 
