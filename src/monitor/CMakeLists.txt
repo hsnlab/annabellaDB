@@ -24,7 +24,7 @@ SET(MONITORING_SOURCE
 		elasticity.cpp
 		storage_policy.cpp
 		movement_policy.cpp
-		slo_policy.cpp)
+		slo_policy.cpp flooding_placement.cpp)
 
 ADD_EXECUTABLE(anna-monitor ${MONITORING_SOURCE})
 TARGET_LINK_LIBRARIES(anna-monitor anna-hash-ring ${KV_LIBRARY_DEPENDENCIES}
