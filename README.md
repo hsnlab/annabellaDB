@@ -157,7 +157,7 @@ python3 scripts/start_interDC_throughput_test1.py
 This script performs the followings:
 1. Starts Bootstrap server (_kvs1_)
 2. Starts the other servers (_kvs2, kvs3, kvs4_)
-3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+3. Run [max_get_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/max_get_client.py) on _kvs1_. This 
 client will PUT a key/value and read it within a sec as much as possible. 
 The script run for a minute and finally saves the list of number of accesses during a sec 
 into a file. 
@@ -178,7 +178,7 @@ python3 scripts/start_interDC_latency_test2.py
 This script performs the followings:
 1. Starts Bootstrap server (_kvs1_)
 2. Starts the other servers (_kvs2, kvs3, kvs4_)
-3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+3. Run [test3_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test3_client.py) on _kvs1_. This 
 client will PUT the key/value one time and read it 10 times in a sec.
 4. After 40 seconds, run a new client on _kvs2_
 5. After 40 seconds, run a new client on _kvs2_
@@ -199,7 +199,7 @@ python3 scripts/start_interDC_throughput_test2.py y
 This script performs the followings:
 1. Starts Bootstrap server (_kvs1_)
 2. Starts the other servers (_kvs2, kvs3, kvs4_)
-3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+3. Run [test4_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test4_client.py) on _kvs1_. This 
 client will PUT the key/value 26 times and read it 260 times in a sec.
 4. After 40 seconds, run a new client on _kvs2_
 5. After 40 seconds, run a new client on _kvs2_
