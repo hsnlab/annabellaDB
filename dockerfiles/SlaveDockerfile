@@ -28,4 +28,4 @@ RUN /bin/bash -c "source KVS-CLIENT/bin/activate"
 RUN KVS-CLIENT/bin/pip3 install google-api-python-client
 RUN KVS-CLIENT/bin/pip3 install zmq
 
-ENTRYPOINT ["/hydro/anna/scripts/start-anna-docker.sh", "n", "n"]
+ENTRYPOINT ["/hydro/anna/scripts/start-docker-slave.sh", "n", "n"]

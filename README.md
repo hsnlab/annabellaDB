@@ -64,7 +64,7 @@ docker build -t master_annabelladb_image -f dockerfiles/MasterDockerfile .
 
 Similarly, to create the other key-value store servers, run:
 ```
-docker build -t slave_annabelladb_image -f dockerfiles/SlaveDockerfile .
+docker build -t annabelladb_image -f dockerfiles/SlaveDockerfile .
 ```
 
 By now, both the master and the slave images are available locally on your host. With the following steps, we can create our own AnnaBellaDB cluster:
@@ -74,12 +74,12 @@ docker run -it -d --name kvs1 master_annabelladb_image
 ```
 * At this moment, the Bootstrap server is waiting for its configuration file. Please edit the the conf/annabella-master-template.yml (change _{DOCKER_IP}_ tags to the IP address of the master docker container launched before) and copy to the container:
 ```
-docker cp conf/annabella-master-template.yml kvs1:/hydro/anna/conf/anna-config.yml"
+docker cp conf/annabella-master-template.yml kvs1:/hydro/anna/conf/anna-config.yml
 ```
 
 * To check if the master is running, e.g, see its monitoring logs:
 ```
-docker exec -it kvs1 tail -f /hydro/anna/log_monitoring_0.txt 
+docker exec -it kvs1 tail -f /hydro/anna/log_monitoring.txt 
 ```
 
 * By now, the bootstrap server is ready, we need to launch the (slave) AnnaBellaDB instances with key-value store role.
