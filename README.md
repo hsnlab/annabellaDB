@@ -99,15 +99,78 @@ Now a two nodes cluster is running. You can start more slave containers if you w
 docker exec -it kvs1 bash -c "/hydro/anna/build/cli/anna-cli hydro/anna/conf/anna-config.yml
 ``` 
 
-
-
-
-
 Please see the following [section](#measuring_scripts), for more details about how to create clusters and run tests on them.
 
 ## <a name="measuring_scripts"></a> Performance measurements of AnnaBellaDB
-TODO
+
+To measure how our AnnaBellaDB solution works differently from other key-value stores, we have created some test scripts
+to get a picture about its performance. We have used multiple clients accessing the data which are stored in the AnnaBellaDB cluster.
+
+Our cluster includes 4 AnnaBellaDB instance (_kvs1, kvs2, kvs3, kvs4_). Each of them is able to store data and the placement algorithm
+is running on the Bootstrap container, i.e., on _kvs1_.
+
+### InterDC Latency Test1
+
+To run this measurement, execute the command from _annabellaDB_ directory:
+```
+python3 scripts/start_interDC_latency_test1.py
+```
+
+This script performs the followings:
+1. Starts Bootstrap server (_kvs1_)
+2. Starts the other servers (_kvs2, kvs3, kvs4_)
+3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+client will PUT a key/value and read it in every sec for a minute. During the process, it measures each access time and 
+saves them into a file. 
+4. After the client has finished on _kvs1_, run a new one on _kvs2_
+5. After the client has finished on _kvs2_, run a new one on _kvs3_
+6. After the client has finished on _kvs3_, run a new one on _kvs4_ 
+7. Collects the measured access times into a pandas dataframe
+8. Depicts it on a plotly plot
+9. Finally, stops the cluster
+
+### InterDC Throughput Test1
+
+To run this measurement, execute the command from _annabellaDB_ directory:
+```
+python3 scripts/start_interDC_throughput_test1.py
+```
+
+This script performs the followings:
+1. Starts Bootstrap server (_kvs1_)
+2. Starts the other servers (_kvs2, kvs3, kvs4_)
+3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+client will PUT a key/value and read it within a sec as much as possible. 
+The script run for a minute and finally saves the list of number of accesses during a sec 
+into a file. 
+4. After the client has finished on _kvs1_, run a new one on _kvs2_
+5. After the client has finished on _kvs2_, run a new one on _kvs3_
+6. After the client has finished on _kvs3_, run a new one on _kvs4_ 
+7. Collects the measured access counts into a pandas dataframe
+8. Depicts it on a plotly plot
+9. Finally, stops the cluster
+
+### InterDC Latency Test2
+
+To run this measurement, execute the command from _annabellaDB_ directory:
+```
+python3 scripts/start_interDC_latency_test2.py
+```
+
+This script performs the followings:
+1. Starts Bootstrap server (_kvs1_)
+2. Starts the other servers (_kvs2, kvs3, kvs4_)
+3. Run [test_client.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_client.py) on _kvs1_. This 
+client will PUT the key/value 26 times and read it 260 times in a sec.
+4. After 40 seconds, run a new client on _kvs2_
+5. After 40 seconds, run a new client on _kvs3_
+6. After 40 seconds, run a new client on _kvs4_ 
+7. Collects the measured access times into a pandas dataframe
+8. Depicts it on a plotly plot
+9. Finally, stops the cluster
 
 ## TODOs:
 
-
+* Solve the FIXME/TODO in the source codes
+* Tests when the AnnaDB exceed the hot threshold
+* look the apache-2.0 license how works
