@@ -58,10 +58,12 @@ It is possible to create AnnaBellaDB cluster, where the the cluster elements (i.
 Currently, there is no official AnnaBellaDB container, that is why we are going to use the base container for AnnaDB (https://hub.docker.com/r/hydroproject/base)
 and install the auxiliary apps and build the AnnaBellaDB inside it. 
 
-First of all, you need to install docker, if you have not done it yet:
+First of all, you need to install docker and other dependencies, if you have not done it yet:
 ```
 sudo apt install docker.io
 sudo apt install python-pip
+cd /client/python
+./compile.sh 
 ```
 
 Two kinds of AnnaBellaDB instance role exist: i) the bootstrap server and ii) the normal key-value store server. 
@@ -133,6 +135,12 @@ To run this measurement, execute the command from _annabellaDB_ directory:
 ```
 python3 scripts/start_interDC_latency_test1.py
 ```
+
+To monitor the master node:
+```
+docker exec -it kvs1 bash -c "tail -f /hydro/anna/log_monitoring.txt"
+```
+
 
 This script performs the followings:
 1. Starts Bootstrap server (_kvs1_)
