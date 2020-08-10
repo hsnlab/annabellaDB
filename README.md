@@ -219,9 +219,3 @@ client will PUT the key/value 26 times and read it 260 times in a sec.
 11. Collects the measured access times into a pandas dataframe
 12. Depicts it on a plotly plot and save as _interDC_throughput_test2_annaBellaDB<...>.html_ in _/annabellaDB_ dir
 13. Finally, stops the cluster
-
-## TODOs:
-
-* Solve the FIXME/TODO in the source codes
-* Tests when the AnnaDB exceed the hot threshold
-* look the apache-2.0 license how works
