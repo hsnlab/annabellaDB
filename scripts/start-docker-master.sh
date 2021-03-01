@@ -14,7 +14,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-cd /hydro/anna
+#cd /hydro/anna
+cd /anna
+
 
 if [ -z "$1" ] && [ -z "$2" ]; then
   echo "Usage: ./$0 build start-user"

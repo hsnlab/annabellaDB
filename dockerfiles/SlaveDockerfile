@@ -18,14 +18,14 @@ USER root
 
 COPY ./ ./anna/
 
-WORKDIR $HYDRO_HOME/anna
+WORKDIR /anna
 RUN bash scripts/build.sh -j4 -bRelease
 WORKDIR /
 
-RUN pip install virtualenv
+RUN python3 -m pip install virtualenv
 RUN virtualenv KVS-CLIENT
 RUN /bin/bash -c "source KVS-CLIENT/bin/activate"
 RUN KVS-CLIENT/bin/pip3 install google-api-python-client
 RUN KVS-CLIENT/bin/pip3 install zmq
 
-ENTRYPOINT ["/hydro/anna/scripts/start-docker-slave.sh", "n", "n"]
+ENTRYPOINT ["/anna/scripts/start-docker-slave.sh", "n", "n"]
