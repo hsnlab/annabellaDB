@@ -57,16 +57,4 @@ RPID=$!
 
 echo "Starting Memory type Anna KVS..."
 export SERVER_TYPE="memory"
-./build/target/kvs/anna-kvs &
-SPID=$!
-
-echo $MPID >> pids
-echo $RPID >> pids
-echo $SPID >> pids
-
-if [ "$2" = "y" ] || [ "$2" = "yes" ]; then
-  ./build/cli/anna-cli conf/anna-local.yml
-fi
-
-#Extra line added in the script to run all command line arguments
-exec "/bin/bash"
+./build/target/kvs/anna-kvs

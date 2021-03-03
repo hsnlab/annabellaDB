@@ -19,7 +19,7 @@ USER root
 COPY ./ ./anna/
 
 WORKDIR /anna
-RUN bash scripts/build.sh -j4 -bRelease
+RUN bash scripts/build.sh -j$(nproc) -bRelease
 WORKDIR /
 
 RUN apt install htop tcpdump -y

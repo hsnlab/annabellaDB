@@ -17,7 +17,6 @@
 #cd /hydro/anna
 cd /anna
 
-
 if [ -z "$1" ] && [ -z "$2" ]; then
   echo "Usage: ./$0 build start-user"
   echo ""
@@ -34,22 +33,18 @@ echo "And now we're waiting for the config file..."
 # Do not start the server until conf/anna-config.yml has been copied onto this
 # pod -- if we start earlier, we won't now how to configure the system.
 while [[ ! -f "conf/anna-config.yml" ]]; do
-  if [[ -z "${ANNABELLADB_MASTER_IP}" ]]; then
-    source /etc/environment
-  else
-    ANNABELLADB_MASTER_IP="${ANNABELLADB_MASTER_IP}"
-    echo "The IP of annabelladb master is $ANNABELLADB_MASTER_IP"
-    sed -i "s/{DOCKER_IP}/$ANNABELLADB_MASTER_IP/" /anna/conf/annabella-master-template.yml
-    cp /anna/conf/annabella-master-template.yml /anna/conf/anna-config.yml
-  fi
+  ip=`ifconfig eth0 | grep "inet " | awk '{print $2}'`
+  ip=`echo $ip | tr . -`
+  ANNABELLADB_INSTANCE_IP="$ip.annabelladb.pod.cluster.local"
+  ANNABELLADB_MASTER_IP="annabelladb-master.default-subdomain.annabelladb.svc.cluster.local"
+  echo "The IP of this annabelladb instance is '$ANNABELLADB_INSTANCE_IP'"
+  sed -i "s/{DOCKER_IP}/$ANNABELLADB_INSTANCE_IP/" /anna/conf/annabella-slave-template.yml
+  sed -i "s/{MASTER_DOCKER_IP}/$ANNABELLADB_MASTER_IP/" /anna/conf/annabella-slave-template.yml
+  cp /anna/conf/annabella-slave-template.yml /anna/conf/anna-config.yml
   sleep 5
 done
 
 echo "conf/anna-config.yml"
-
-echo "Starting Anna Monitor daemon..."
-./build/target/kvs/anna-monitor &
-MPID=$!
 
 echo "Starting Anna Route daemon..."
 ./build/target/kvs/anna-route &
@@ -57,16 +52,5 @@ RPID=$!
 
 echo "Starting Memory type Anna KVS..."
 export SERVER_TYPE="memory"
-./build/target/kvs/anna-kvs &
-SPID=$!
+./build/target/kvs/anna-kvs
 
-echo $MPID >> pids
-echo $RPID >> pids
-echo $SPID >> pids
-
-if [ "$2" = "y" ] || [ "$2" = "yes" ]; then
-  ./build/cli/anna-cli conf/anna-local.yml
-fi
-
-#Extra line added in the script to run all command line arguments
-exec "/bin/bash"
