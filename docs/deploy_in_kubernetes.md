@@ -2,7 +2,7 @@
 
 All the necessary yaml files are located in the conf directory, so execute the followings from there. I assume you have already installed the kubernetes on your machine (or machine cluster).
 
-Firstly, create a new namespace "annabelladb". We use this to deploy all components here.
+Firstly, create a new namespace *annabelladb*. We use this to deploy all components here.
 ```
 kubectl create namespace annabelladb
 ```
@@ -25,7 +25,7 @@ $ kubectl logs annabelladb-master-deployment-7d6d7458ff-k7dpw -n=annabelladb
 And now we're waiting for the config file...
 
 ```
-Don't worry, nothing serious, we just need to set its IP as an environment variable. With the k8s-deployment.yml file, we also created a headless service to the master, so now it is available with the domain name annabelladb-master.default-subdomain.annabelladb.svc.cluster.local . Consequently, inside the master instance's pod insert the line below to its /etc/environment:
+Don't worry, nothing serious, we just need to set its IP as an environment variable. With the *k8s-deployment.yml* file, we also created a headless service to the master, so now it is available with the domain name *annabelladb-master.default-subdomain.annabelladb.svc.cluster.local* . Consequently, inside the master instance's pod insert the line below to its */etc/environment*:
 ```
 ANNABELLADB_MASTER_IP="annabelladb-master.default-subdomain.annabelladb.svc.cluster.local"
 ```
@@ -67,7 +67,7 @@ Now the annabellaDB cluster for now contains only the master instance. Let's con
 
 ## Deploy annabellaDB child instances
 
-Again from the /conf, execute the following to deploy a daemonset of annabellaDB child instances:
+Again from the */conf*, execute the following to deploy a daemonset of annabellaDB child instances:
 ```
 $ kubectl apply -f k8s-daemonset.yml -n annabelladb
 ```
