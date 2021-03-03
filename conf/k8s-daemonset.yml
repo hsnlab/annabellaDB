@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: annabelladb-children-daemonset
+  namespace: annabelladb
+  labels:
+    app: annabelladb-child
+spec:
+  selector:
+    matchLabels:
+      name: annabelladb-child
+  template:
+    metadata:
+      labels:
+        name: annabelladb-child
+    spec:
+      containers:
+      - name: annabelladb-child
+        image: szalay/annabelladb_k8s
