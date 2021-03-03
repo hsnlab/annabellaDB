@@ -9,6 +9,12 @@ More info about AnnaDB can be found at:
 * https://dsf.berkeley.edu/jmh/papers/anna_ieee18.pdf
 * https://www.vikrams.io/papers/anna-vldb19.pdf
 
+## How to deploy?
+You have three choices to deploy annabellaDB cluster:
+* [Deploy annabellaDB in Kubernetes](https://github.com/hsnlab/annabellaDB/blob/master/docs/deploy_in_kubernetes.md)
+* Deploy annabellaDB in Docker containers
+* Install annabellaDB on your computer
+
 ## Installation
 
 ### Install dependencies
