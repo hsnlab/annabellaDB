@@ -32,3 +32,7 @@ spec:
       containers:
       - name: annabelladb-master
         image: szalay/master_annabelladb_k8s
+        env:
+        - name: ANNABELLADB_MASTER_IP
+          value: "annabelladb-master.default-subdomain.annabelladb.svc.cluster.local"
+
