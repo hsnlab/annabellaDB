@@ -1,35 +1,25 @@
 # Deploy annabellaDB cluster in Kubernetes
 
-All the necessary yaml files are located in the conf directory, so execute the followings from there. I assume you have already installed the kubernetes on your machine (or machine cluster).
+All the necessary k8s yaml files are located in the [conf](https://github.com/hsnlab/annabellaDB/blob/master/conf)  directory, so execute the commands below from that dir. In this description, we assume you have already installed the kubernetes on your machine (or machine cluster).
 
-Firstly, create a new namespace *annabelladb*. We use this to deploy all components here.
+Firstly, create a new namespace *annabelladb*. We use deploy all components in there.
 ```
 kubectl create namespace annabelladb
 ```
 
-## Deploy and configure annabellaDB master instance
+## Deploy annabellaDB master instance
 
-Create the master instance and a service for it with the following command:
+Create the master instance and a service related to it with the following command:
 ```
 kubectl apply -f k8s-deployment.yml -n annabelladb
 ```
-The deployment contains the master instance pod. To check if it's running use this:
+The deployment contains the master instance pod. To check if it's running, use this:
 ```
 $ kubectl get pods -n=annabelladb
 NAME                                             READY   STATUS    RESTARTS   AGE
 annabelladb-master-deployment-7d6d7458ff-k7dpw   1/1     Running   0          41s
 ```
-Now the master instance is waiting for its configuration. 
-```
-$ kubectl logs annabelladb-master-deployment-7d6d7458ff-k7dpw -n=annabelladb
-And now we're waiting for the config file...
-
-```
-Don't worry, nothing serious, we just need to set its IP as an environment variable. With the *k8s-deployment.yml* file, we also created a headless service to the master, so now it is available with the domain name *annabelladb-master.annabelladb-master-service.annabelladb.svc.cluster.local* . Consequently, inside the master instance's pod insert the line below to its */etc/environment*:
-```
-ANNABELLADB_MASTER_IP="annabelladb-master.annabelladb-master-service.annabelladb.svc.cluster.local"
-```
-To check it is working now see its logs:
+Now the master instance is waiting for its workers, i.e, the other annabellaDB instances where data could be stored. The master is available at *annabelladb-master.default-subdomain.annabelladb.svc.cluster.local*.
 ```
 $ kubectl logs annabelladb-master-deployment-7d6d7458ff-k7dpw -n=annabelladb
 And now we're waiting for the config file...
@@ -38,7 +28,9 @@ conf/anna-config.yml
 Starting Anna Monitor daemon...
 Starting Anna Route daemon...
 Starting Memory type Anna KVS...
+
 ```
+
 
 You can check the annabellaDB's logs:
 ```
@@ -63,11 +55,11 @@ $ kubectl exec annabelladb-master-deployment-7d6d7458ff-k7dpw -n annabelladb -- 
 [2021-03-03 13:15:52.812] [monitoring_log] [info] DEBUG: -----------------------------------------------------------------
 ```
 
-Now the annabellaDB cluster for now contains only the master instance. Let's continue with the slave instances.
+The annabellaDB cluster by now contains only the master instance. Let's continue with the child instances.
 
 ## Deploy annabellaDB child instances
 
-Again from the */conf*, execute the following to deploy a daemonset of annabellaDB child instances:
+Again from the [conf](https://github.com/hsnlab/annabellaDB/blob/master/conf), execute the following to deploy a daemonset of annabellaDB child instances:
 ```
 $ kubectl apply -f k8s-daemonset.yml -n annabelladb
 ```
@@ -81,7 +73,7 @@ annabelladb-children-daemonset-rwrpk             1/1     Running   0          79
 annabelladb-master-deployment-7d6d7458ff-k7dpw   1/1     Running   0          20m
 ```
 
-Right now the children and master instances are running in the kubernetes.  To check whether they form a common annabellaDB cluster list the logs of the master instance. It includes the list of annabellaDB instance, the delay matrix among the cluster nodes and the list of stored keys. For example, I got the following log:
+Right now the children and master instances are running in the kubernetes.  To check whether they form a common annabellaDB cluster list the logs of the master instance. It includes the list of annabellaDB instance, the delay matrix among the cluster nodes and the list of stored keys. For example, I got the following log after a while:
 ```
 $ kubectl exec annabelladb-master-deployment-7d6d7458ff-k7dpw -n annabelladb -- tail -f /anna/log_monitoring.txt
 [2021-03-03 13:27:11.456] [monitoring_log] [info] DEBUG: Connected KVS servers to the cluster (round 62):
@@ -91,7 +83,25 @@ $ kubectl exec annabelladb-master-deployment-7d6d7458ff-k7dpw -n annabelladb -- 
 [2021-03-03 13:27:11.456] [monitoring_log] [info] DEBUG:	 - 192-168-133-202.annabelladb.pod.cluster.local:0
 ```
 
-Now we can sure that the desired cluster is working. To check an application example how to use annabellaDB to store the internal data see TODO.
+All children annabellaDB instance contains a HTTP rest API server through which the default PUT and GET data operations (among the others) are available. These servers use the *cluster IP* of the pods and listen on the port 5000. For more details and logs, check the following:
 
+```
+$ kubectl logs -n=annabelladb annabelladb-children-daemonset-d5jz9
+And now we're waiting for the config file...
+The IP of this annabelladb instance is '10-1-2-23.annabelladb.pod.cluster.local'
+conf/anna-config.yml
+Compile python client package
+Start HTTP Rest API server
+ * Serving Flask app 'rest_server' (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on all addresses.
+   WARNING: This is a development server. Do not use it in a production deployment.
+ * Running on http://10.1.2.23:5000/ (Press CTRL+C to quit)
+Starting Anna Route daemon...
+Starting Memory type Anna KVS...
+```
 
-
+To see an example, how to use AnnaBellaDB kubernetes cluster and enjoy its benefits check [Tutorial of using k8s annabellaDB cluster](https://github.com/hsnlab/annabellaDB/tree/master/docs/tutorial_using_k8s_abdb_cluster).
