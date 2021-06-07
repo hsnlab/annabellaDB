@@ -46,7 +46,18 @@ done
 
 echo "conf/anna-config.yml"
 
+echo "Compile python client package"
+cd /anna/client/python || exit
+./compile.sh
+sleep 1
+
+echo "Start HTTP Rest API server"
+cd /anna/client/python || exit
+python3 rest_server.py $ANNABELLADB_INSTANCE_IP &
+sleep 1
+
 echo "Starting Anna Route daemon..."
+cd /anna || exit
 ./build/target/kvs/anna-route &
 RPID=$!
 

@@ -19,10 +19,10 @@ USER root
 COPY ./ ./anna/
 
 WORKDIR /anna
-RUN bash scripts/build.sh -j$(nproc) -bRelease
+RUN bash scripts/build.sh -j $(nproc) -bRelease
 WORKDIR /
 
-RUN python3 -m pip install virtualenv
+RUN python3 -m pip install virtualenv flask
 RUN virtualenv KVS-CLIENT
 RUN /bin/bash -c "source KVS-CLIENT/bin/activate"
 RUN KVS-CLIENT/bin/pip3 install google-api-python-client

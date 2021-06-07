@@ -25,9 +25,9 @@ $ kubectl logs annabelladb-master-deployment-7d6d7458ff-k7dpw -n=annabelladb
 And now we're waiting for the config file...
 
 ```
-Don't worry, nothing serious, we just need to set its IP as an environment variable. With the *k8s-deployment.yml* file, we also created a headless service to the master, so now it is available with the domain name *annabelladb-master.default-subdomain.annabelladb.svc.cluster.local* . Consequently, inside the master instance's pod insert the line below to its */etc/environment*:
+Don't worry, nothing serious, we just need to set its IP as an environment variable. With the *k8s-deployment.yml* file, we also created a headless service to the master, so now it is available with the domain name *annabelladb-master.annabelladb-master-service.annabelladb.svc.cluster.local* . Consequently, inside the master instance's pod insert the line below to its */etc/environment*:
 ```
-ANNABELLADB_MASTER_IP="annabelladb-master.default-subdomain.annabelladb.svc.cluster.local"
+ANNABELLADB_MASTER_IP="annabelladb-master.annabelladb-master-service.annabelladb.svc.cluster.local"
 ```
 To check it is working now see its logs:
 ```
