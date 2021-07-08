@@ -15,17 +15,17 @@
 #  limitations under the License.
 
 if [ -z "$1" ] && [ -z "$2" ]; then
-  echo "Usage: ./$0 build start-user"
+  echo "Usage: ./$0 <IP of AnnaBellaDB node> start-user"
   echo ""
   echo "You must run this from the project root directory."
   exit 1
 fi
 
-if [ "$1" = "y" ] || [ "$1" = "yes" ]; then
-  ./scripts/build.sh
-fi
-
-cp conf/anna-local.yml conf/anna-config.yml
+ANNABELLADB_MASTER_IP="$1"
+echo "The IP of annabelladb master is $ANNABELLADB_MASTER_IP"
+cp conf/annabella-master-template.yml conf/anna-config.yml
+sed -i "s/{DOCKER_IP}/$ANNABELLADB_MASTER_IP/" conf/anna-config.yml
+sleep 2
 
 echo "Starting Anna Monitor daemon..."
 ./build/target/kvs/anna-monitor &
