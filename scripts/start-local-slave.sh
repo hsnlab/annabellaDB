@@ -14,22 +14,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-if [ -z "$1" ] && [ -z "$2" ]; then
-  echo "Usage: ./$0 <IP of AnnaBellaDB node> start-user"
+if [ -z "$1" ] && [ -z "$2" ] && [ -z "$3" ]; then
+  echo "Usage: ./$0 <IP of AnnaBellaDB master node> <IP of AnnaBellaDB child node> start-user"
   echo ""
   echo "You must run this from the project root directory."
   exit 1
 fi
 
 ANNABELLADB_MASTER_IP="$1"
-echo "The IP of annabelladb master is $ANNABELLADB_MASTER_IP"
-cp conf/annabella-master-template.yml conf/anna-config.yml
-sed -i "s/{DOCKER_IP}/$ANNABELLADB_MASTER_IP/" conf/anna-config.yml
+ANNABELLADB_SLAVE_IP="$2"
+echo "The IP of this annabelladb child instance is '$ANNABELLADB_SLAVE_IP'"
+echo "The IP of the annabelladb master instance is '$ANNABELLADB_MASTER_IP'"
+cp conf/annabella-slave-template.yml conf/anna-config.yml
+sed -i "s/{DOCKER_IP}/$ANNABELLADB_SLAVE_IP/" conf/anna-config.yml
+sed -i "s/{MASTER_DOCKER_IP}/$ANNABELLADB_MASTER_IP/" conf/anna-config.yml
 sleep 2
 
-echo "Starting Anna Monitor daemon..."
-./build/target/kvs/anna-monitor &
-MPID=$!
 
 echo "Starting Anna Route daemon..."
 ./build/target/kvs/anna-route &
@@ -40,10 +40,6 @@ export SERVER_TYPE="memory"
 ./build/target/kvs/anna-kvs &
 SPID=$!
 
-echo $MPID >> pids
-echo $RPID >> pids
-echo $SPID >> pids
-
-if [ "$2" = "y" ] || [ "$2" = "yes" ]; then
+if [ "$3" = "y" ] || [ "$3" = "yes" ]; then
   ./build/cli/anna-cli conf/anna-config.yml
 fi
