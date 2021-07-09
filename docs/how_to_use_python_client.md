@@ -49,5 +49,8 @@ except UnboundLocalError as e:
 
 **GET value from the ABDB store**
 ```
-
+values = kvs_client.get(key)
+value = values[key]
 ```
+
+
