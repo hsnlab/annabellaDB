@@ -65,3 +65,6 @@ To start the benchmark tool, use the command below, where the parameter is the I
 ```
 
 When the benchmark finishes, a plot will be generated about the measured values, similiar like this:
+![benchmark](https://github.com/hsnlab/annabellaDB/blob/master/docs/worker2.png)
+
+In this Figure, we can conclude that the PUT operation is about 0.8 _ms_. However, in case of the GET, we can split the measured values into two phases: one before the data location optimization, and one after that. At the begging, the requested data is stored at the Master ABDB instance, so we get higher access times. After ABDB migrates (at aroung 20th iteration) the data to the child2 server, where the benchmark tool is running, the access times drop down to 0.5 _ms_. 
