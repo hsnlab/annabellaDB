@@ -51,3 +51,32 @@ sudo ./scripts/stop-anna-local.sh y
 ```
 
 ## Install ABDB children nodes
+
+Install the dependencies:
+```
+sudo apt update
+cd common
+sudo ./scripts/install-dependencies.sh
+cd ../client/python
+./compile.sh
+cd ../..
+```
+
+Build the source code:
+```
+bash scripts/build.sh -bRelease -j4
+```
+
+Start the AnnaBellaDB master instance:
+  * 1st parameter: IP address of the master server
+  * 2nd parameter: IP address of the child server
+  * 3rd parameter: 'y' or 'n' to start a bash CLI client to the ABDB or not
+
+```
+./scripts/start-local-slave.sh 192.168.0.45 192.168.0.46 y
+```
+
+## Stop ABDB instance on a node
+```
+sudo ./scripts/stop-anna-local.sh  y
+```
