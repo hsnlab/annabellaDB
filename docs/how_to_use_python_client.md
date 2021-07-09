@@ -14,6 +14,8 @@ To see how to create ABDB server cluster, please read this: [install ABDB on you
 
 Now you're ready to use ABDB from your python source code. In the followings we show how cloud you import ABDB client and PUT or GET key-value pairs to your ABDB cluster.
 
+# How to use python client for ABDB
+
 **Import anna client and connect to ABDB**
 ```
 import anna.client as client
@@ -53,4 +55,13 @@ values = kvs_client.get(key)
 value = values[key]
 ```
 
+# Test benchmarking tool for your ABDB store.
 
+The [test_benchmarking.py](https://github.com/hsnlab/annabellaDB/blob/master/client/python/test_benchmarking.py) is a basic benchmark python tool, that reads and writes 100 times a key-value pair to your ABDB cluster and measures the necesary time to perform these operations. 
+
+To start the benchmark tool, use the command below, where the parameter is the IP address of the nearest ABDB instance. E.g., in this case we run it on the child2 server, that's why the _192.168.0.47_ is used.
+```
+./test_benchmarking.py 192.168.0.47
+```
+
+When the benchmark finishes, a plot will be generated about the measured values, similiar like this:
