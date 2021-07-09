@@ -68,8 +68,8 @@ bash scripts/build.sh -bRelease -j4
 ```
 
 Start the AnnaBellaDB master instance:
-  * 1st parameter: IP address of the child server
-  * 2nd parameter: IP address of the master server
+  * 1st parameter: IP address of the master server
+  * 2nd parameter: IP address of the child server
   * 3rd parameter: 'y' or 'n' to start a bash CLI client to the ABDB or not
 
 ```
