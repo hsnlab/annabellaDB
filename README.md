@@ -6,11 +6,11 @@ We have published our experiences with ABDB in the research paper titled [AnnaBe
 
 For more info visit: https://netsoft.gsuite.tmit.bme.hu/demos/annabelladb
 
-See how it worked ACM SIGCOMM 2020 demo:
+See how it worked at ACM SIGCOMM 2020 demo:
 
 [![AnnaBellaDB ACM SIGCOMM 2020 demo](https://img.youtube.com/vi/OU8B2FdsDQ8/0.jpg)](https://www.youtube.com/watch?v=OU8B2FdsDQ8)
 
-Our presentation in IEEE/IFIP CNSM 2020:
+Our presentation at IEEE/IFIP CNSM 2020:
 
 [![AnnaBellaDB: Key-Value Store Made Cloud Native](https://img.youtube.com/vi/VG-Q-t94vbg/0.jpg)](https://www.youtube.com/watch?v=VG-Q-t94vbg)
 
@@ -24,9 +24,10 @@ More info about AnnaDB can be found at:
 ## Deploy/Install ABDB
 You have three choices to deploy your annabellaDB cluster:
 * [Deploy annabellaDB in Kubernetes](https://github.com/hsnlab/annabellaDB/blob/master/docs/deploy_in_kubernetes.md)
-* Deploy annabellaDB in Docker containers
+* [Deploy annabellaDB in Docker containers](https://github.com/hsnlab/annabellaDB/blob/master/docs/deploy_annabellaDB_in_Docker_containers.md)
 * [Install annabellaDB on your computer](https://github.com/hsnlab/annabellaDB/blob/master/docs/install_abdb_on_server_cluster.md)
 
+<!---
 ## Installation
 
 ### Install dependencies
@@ -254,3 +255,4 @@ client will PUT the key/value 26 times and read it 260 times in a sec.
 12. Depicts it on a plotly plot and save as _interDC_throughput_test2_annaBellaDB<...>.html_ in _/annabellaDB_ dir
 13. Finally, stops the cluster
 
+-->
