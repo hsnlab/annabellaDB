@@ -1,16 +1,28 @@
 # AnnaBellaDB
 
-AnnaBellaDB is a proof-of-concept (PoC) network latency and access-pattern aware key-value store. In our opinion, this solution is ideal to adapt the stateless design and use AnnaBellaDB as a cloud database where the application states could be externalized.
+AnnaBellaDB (ABDB) is a proof-of-concept (PoC) network latency and access-pattern aware key-value store. In our opinion, this solution is ideal to adapt the stateless design and use AnnaBellaDB as a cloud database where the application states could be externalized.
 
-This PoC have been forked from one of the most effective key-value store from the academy, called AnnaDB which was developed in in the [RISE Lab](https://rise.cs.berkeley.edu) at [UC Berkeley](https://berkeley.edu).
+We have published our experiences with ABDB in the research paper titled [AnnaBellaDB: Key-Value Store Made Cloud Native](http://dl.ifip.org/db/conf/cnsm/cnsm2020/1570657795.pdf]. )
+
+For more info visit: https://netsoft.gsuite.tmit.bme.hu/demos/annabelladb
+
+See how it worked ACM SIGCOMM 2020 demo:
+
+[![AnnaBellaDB ACM SIGCOMM 2020 demo](https://img.youtube.com/vi/OU8B2FdsDQ8/0.jpg)](https://www.youtube.com/watch?v=OU8B2FdsDQ8)
+
+Our presentation in IEEE/IFIP CNSM 2020:
+
+[![AnnaBellaDB: Key-Value Store Made Cloud Native](https://img.youtube.com/vi/VG-Q-t94vbg/0.jpg)](https://www.youtube.com/watch?v=VG-Q-t94vbg)
+
+ABDB have been forked from one of the most effective key-value store from the academy, called AnnaDB which was developed in in the [RISE Lab](https://rise.cs.berkeley.edu) at [UC Berkeley](https://berkeley.edu).
 
 More info about AnnaDB can be found at:
 * https://github.com/hydro-project/anna
 * https://dsf.berkeley.edu/jmh/papers/anna_ieee18.pdf
 * https://www.vikrams.io/papers/anna-vldb19.pdf
 
-## How to deploy?
-You have three choices to deploy annabellaDB cluster:
+## Deploy/Install ABDB
+You have three choices to deploy your annabellaDB cluster:
 * [Deploy annabellaDB in Kubernetes](https://github.com/hsnlab/annabellaDB/blob/master/docs/deploy_in_kubernetes.md)
 * Deploy annabellaDB in Docker containers
 * [Install annabellaDB on your computer](https://github.com/hsnlab/annabellaDB/blob/master/docs/install_abdb_on_server_cluster.md)
