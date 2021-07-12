@@ -7,8 +7,10 @@ First of all, you need to install docker and other dependencies, if you have not
 ```
 sudo apt install docker.io
 sudo apt install python-pip
-cd /client/python
-./compile.sh 
+cd common
+sudo ./scripts/install-dependencies.sh
+cd ../client/python
+./compile.sh
 ```
 
 Two kinds of AnnaBellaDB instance role exist: i) the bootstrap server and ii) the normal key-value store server. 
