@@ -2,7 +2,7 @@
 
 AnnaBellaDB (ABDB) is a proof-of-concept (PoC) network latency and access-pattern aware key-value store. In our opinion, this solution is ideal to adapt the stateless design and use AnnaBellaDB as a cloud database where the application states could be externalized.
 
-We have published our experiences with ABDB in the research paper titled [AnnaBellaDB: Key-Value Store Made Cloud Native](http://dl.ifip.org/db/conf/cnsm/cnsm2020/1570657795.pdf]. )
+We have published our experiences with ABDB in the research paper titled [AnnaBellaDB: Key-Value Store Made Cloud Native](http://dl.ifip.org/db/conf/cnsm/cnsm2020/1570657795.pdf)
 
 For more info visit: https://netsoft.gsuite.tmit.bme.hu/demos/annabelladb
 
