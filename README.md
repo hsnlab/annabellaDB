@@ -14,7 +14,7 @@ Our presentation at IEEE/IFIP CNSM 2020:
 
 [![AnnaBellaDB: Key-Value Store Made Cloud Native](https://img.youtube.com/vi/VG-Q-t94vbg/0.jpg)](https://www.youtube.com/watch?v=VG-Q-t94vbg)
 
-ABDB have been forked from one of the most effective key-value store from the academy, called AnnaDB which was developed in in the [RISE Lab](https://rise.cs.berkeley.edu) at [UC Berkeley](https://berkeley.edu).
+ABDB has been forked from one of the most effective key-value store from the academy, called AnnaDB which was developed in in the [RISE Lab](https://rise.cs.berkeley.edu) at [UC Berkeley](https://berkeley.edu).
 
 More info about AnnaDB can be found at:
 * https://github.com/hydro-project/anna
