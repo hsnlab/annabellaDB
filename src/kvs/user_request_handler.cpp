@@ -56,7 +56,7 @@ void user_request_handler(
 
         // If the requested key is not a METADATA
         if (key.find("METADATA") == std::string::npos) {
-            log->info("DEBUG: KV Server get the request related to the key {}. ", key);
+            //log->info("DEBUG: KV Server get the request related to the key {}. ", key);
 
             // DEL request
             if (request_type == RequestType::DEL) {
@@ -118,7 +118,7 @@ void user_request_handler(
             else if (request_type == RequestType::PUT) {
                 // If this server contains the master replica of the requested key
                 if (key_replication_map[key].master_address_ == wt.public_ip()) {
-                    log->info("DEBUG: Request is to PUT key '{}'", key);
+                    //log->info("DEBUG: Request is to PUT key '{}'", key);
                     succeed = true;
 
                     KeyTuple *tp = response.add_tuples();
@@ -236,13 +236,13 @@ void user_request_handler(
                 // GET request
             else if (request_type == RequestType::GET) {
 
-		log->info("DEBUG: key {}, master addr in map {}, this server thread public ip {} ", key, key_replication_map[key].master_address_, wt.public_ip());
+		//log->info("DEBUG: key {}, master addr in map {}, this server thread public ip {} ", key, key_replication_map[key].master_address_, wt.public_ip());
 
                 // If this server contains either the master or slave replica of the requested key
                 if (key_replication_map[key].master_address_ == wt.public_ip() ||
                     key_replication_map[key].slave_addresses_.find(wt.public_ip()) !=
                     key_replication_map[key].slave_addresses_.end()) {
-                    log->info("DEBUG: Request is to GET key '{}'", key);
+                    //log->info("DEBUG: Request is to GET key '{}'", key);
                     succeed = true;
 
                     KeyTuple *tp = response.add_tuples();

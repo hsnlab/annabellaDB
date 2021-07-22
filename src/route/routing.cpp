@@ -172,7 +172,7 @@ void run(unsigned thread_id, Address ip, vector<Address> monitoring_ips) {
             split(metadata_master_key, '|', v);
             Key key = v[1];
             key_replication_map[key].master_address_ = tuple.payload();
-            log->info("DEBUG: The master address of key '{}' is {}", key, key_replication_map[key].master_address_);
+            //log->info("DEBUG: The master address of key '{}' is {}", key, key_replication_map[key].master_address_);
         }
 
         if (pollitems[6].revents & ZMQ_POLLIN){
@@ -200,7 +200,7 @@ void run(unsigned thread_id, Address ip, vector<Address> monitoring_ips) {
                 .count();
         if (duration >= 10) {
             /////////////////////////////////////////////////////////////////////////
-            log->info("DEBUG: (STAT) ---------------------------------------------------");
+	    log->info("DEBUG: (STAT) ---------------------------------------------------");
             log->info("DEBUG: (STAT) Content of the key_replication_map");
             for (const auto &key_rep : key_replication_map) {
                 if (key_rep.first.find("METADATA") == std::string::npos) {

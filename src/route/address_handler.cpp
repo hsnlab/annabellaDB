@@ -108,17 +108,17 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                     tp->set_key(key);
                     respond = true;
                     tp->add_ips(MonitoringThread(monitoring_ip).key_request_connect_address());
-                    log->info(
-                            "ROUTE: requested key '{}' is not stored in key_replication_map. Giving back the Bootstrap's IP {}.",
-                            key,
-                            MonitoringThread(monitoring_ip).key_request_connect_address());
+                    //log->info(
+                    //        "ROUTE: requested key '{}' is not stored in key_replication_map. Giving back the Bootstrap's IP {}.",
+                    //        key,
+                    //        MonitoringThread(monitoring_ip).key_request_connect_address());
 
                     if (addr_request.query_type() == "PUT") {
-			log->info("ROUTE: request type of key '{}' is PUT", key);
+			//log->info("ROUTE: request type of key '{}' is PUT", key);
                         tp->set_request_type(RequestType::PUT);
                     }
                     else if(addr_request.query_type() == "GET"){
-			log->info("ROUTE: request type of key '{}' is GET", key);
+			//log->info("ROUTE: request type of key '{}' is GET", key);
                         tp->set_request_type(RequestType::GET);
                     }
 
@@ -132,7 +132,7 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                     // If the requested key is already stored in the KVS
                 else {
                     //TODO: Gives back the right address, where the key is located
-                    log->info("ROUTE: good news, the requested key '{}' has already been stored.", key);
+                    //log->info("ROUTE: good news, the requested key '{}' has already been stored.", key);
                     if (addr_request.query_type() == "PUT") {
 
                         KeyAddressResponse_KeyAddress *tp = addr_response.add_addresses();
@@ -143,7 +143,7 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                                                   std::to_string(kKeyRequestPort);
                         tp->add_ips(connect_address);
                         tp->set_request_type(RequestType::PUT);
-                        log->info("ROUTE: Request is a PUT, Returning master address {}", connect_address);
+                        //log->info("ROUTE: Request is a PUT, Returning master address {}", connect_address);
 
                     } else if (addr_request.query_type() == "GET") {
                         //FIXME: Gives back not the master but the closest slave address
@@ -159,9 +159,9 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                         Address connect_address = "tcp://" + slave_addr + ":" + std::to_string(kKeyRequestPort);
                         tp->add_ips(connect_address);
                         tp->set_request_type(RequestType::GET);
-                        log->info("ROUTE: Request is a GET, closest slave address {}", connect_address);
+                        //log->info("ROUTE: Request is a GET, closest slave address {}", connect_address);
                     } else {
-                        log->info("ROUTE: WARNING: Unknown request type: {}. Maybe you're using python client?",
+                        //log->info("ROUTE: WARNING: Unknown request type: {}. Maybe you're using python client?",
                                   addr_request.query_type());
                     }
 
@@ -173,7 +173,7 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
 
     if (respond) {
 
-        log->info("ROUTE: SENDING out <KeyAddressResponse> to {}",addr_request.response_address());
+        //log->info("ROUTE: SENDING out <KeyAddressResponse> to {}",addr_request.response_address());
         string serialized;
         addr_response.SerializeToString(&serialized);
 

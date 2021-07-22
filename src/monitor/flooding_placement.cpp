@@ -775,18 +775,17 @@ void flooding_placement_handler(logger log, string &serialized, GlobalRingMap &g
 
                     if (request.type() == RequestType::GET){
 			master_target_address = st.key_request_connect_address();
-                        log->info("BOOTSTRAP:  The requested key '{}' has already been stored in the cluster, since it is a GET operation, the request is forwarded to server '{}'", key, master_target_address);
+                        //log->info("BOOTSTRAP:  The requested key '{}' has already been stored in the cluster, since it is a GET operation, the request is forwarded to server '{}'", key, master_target_address);
                     }
                     else {
                         master_target_address = st.store_request_connect_address();
-                        log->info("BOOTSTRAP:  The requested key '{}' has already been stored in the cluster, since it is a PUT operation, the request is forwarded to server '{}'", key, master_target_address);
+                        //log->info("BOOTSTRAP:  The requested key '{}' has already been stored in the cluster, since it is a PUT operation, the request is forwarded to server '{}'", key, master_target_address);
                     }
 
                     //master_target_address = st.store_request_connect_address();
                     break;
                 }
             }
-	    //log->info("BOOTSTRAP:  The requested key '{}' has already been stored in the cluster, in the server '{}'", key, key_replication_map[key].master_address_);
             tp->set_master(key_replication_map[key].master_address_);
 
         }
