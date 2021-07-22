@@ -161,7 +161,7 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                         tp->set_request_type(RequestType::GET);
                         //log->info("ROUTE: Request is a GET, closest slave address {}", connect_address);
                     } else {
-                        //log->info("ROUTE: WARNING: Unknown request type: {}. Maybe you're using python client?",
+                        log->info("ROUTE: WARNING: Unknown request type: {}. Maybe you're using python client?",
                                   addr_request.query_type());
                     }
 
