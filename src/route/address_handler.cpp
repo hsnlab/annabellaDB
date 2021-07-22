@@ -114,9 +114,11 @@ void address_handler(logger log, string &serialized, SocketCache &pushers,
                             MonitoringThread(monitoring_ip).key_request_connect_address());
 
                     if (addr_request.query_type() == "PUT") {
+			log->info("ROUTE: request type of key '{}' is PUT", key);
                         tp->set_request_type(RequestType::PUT);
                     }
                     else if(addr_request.query_type() == "GET"){
+			log->info("ROUTE: request type of key '{}' is GET", key);
                         tp->set_request_type(RequestType::GET);
                     }
 

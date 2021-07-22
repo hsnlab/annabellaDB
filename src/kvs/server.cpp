@@ -581,7 +581,8 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
                                 serializers[tuple.lattice_type()], stored_key_map, true);
                     local_changeset.insert(key);
                     key_replication_map[key].master_address_ = tuple.master();
-                    //log->info("OK");
+                    log->info("SERVER: PUT <KeyRequest> arrived from the BOOTSTRAP server to store KEY '{}' and its master '{}'",key, key_replication_map[key].master_address_);
+		    //log->info("OK");
 
                     KeyTuple *tp = response.add_tuples();
                     tp->set_key(key);
@@ -608,7 +609,7 @@ void run(unsigned thread_id, Address public_ip, Address private_ip,
                 }
 
                 else {
-                    log->error("Only PUT/DEL requests should arrive from the BOOTSTRAP server to a KVS.");
+		    log->error("Only PUT/DEL requests should arrive from the BOOTSTRAP server to a KVS. Received request is '{}'", request_type);
                     //std::cout << "SERVER ERROR: Only PUT/DEL requests should arrive from the BOOTSTRAP server to a KVS.";
                 }
 
