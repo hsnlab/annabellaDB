@@ -1,0 +1,11 @@
+function_name,reading_count,writing_count,when_to_move,key_to_access,initial_server
+function_0,4,4,1,key0,server1
+function_1,3,3,3,key0,server1
+function_2,0,0,2,key0,server2
+function_3,4,1,1,key0,server1
+function_4,1,4,1,key0,server1
+function_5,0,4,1,key0,server1
+function_6,0,2,1,key0,server2
+function_7,2,2,2,key0,server0
+function_8,0,4,4,key0,server0
+function_9,1,4,1,key0,server2
