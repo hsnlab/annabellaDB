@@ -8,7 +8,13 @@ First of all, install the dependencies by exectuing the following commands from 
 ```
 sudo apt update
 cd common
+
+# Build with default clang (llvm trusty are no longer supported by Ubuntu)
 sudo ./scripts/install-dependencies.sh
+
+# Or build with g++:
+sudo ./scripts/install-dependencies.sh g++
+
 cd ../client/python
 ./compile.sh
 cd ../..
@@ -16,7 +22,11 @@ cd ../..
 
 Build the source code of ABDB. Execute the command in the /annabellaDB directory:
 ```
-bash scripts/build.sh -bRelease -j4
+# Build with default clang 
+    bash scripts/build.sh -bRelease -j4
+    
+# Or build with g++ 
+    bash scripts/build.sh -g -bRelease -j4
 ```
 
 The [build.sh](https://github.com/hsnlab/annabellaDB/blob/master/scripts/build.sh) script above generatese all binaries into the __build__ directory.
